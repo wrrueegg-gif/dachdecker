@@ -4,7 +4,7 @@ import TopBar from '~/components/global/TopBar.astro';
 import Footer from '~/components/global/Footer.astro';
 import StickyMobileBar from '~/components/global/StickyMobileBar.astro';
 import { site } from '~/data/site';
-import { ClientRouter } from 'astro:transitions';
+import { ViewTransitions } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -104,7 +104,7 @@ const localBusinessSchema = {
 
     <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
 
-    <ClientRouter />
+    <ViewTransitions />
   </head>
   <body>
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary-dark focus:px-4 focus:py-2 focus:text-white">Zum Inhalt springen</a>
