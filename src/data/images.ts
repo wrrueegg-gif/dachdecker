@@ -4,7 +4,16 @@
 const HF =
   'https://d8j0ntlcm91z4.cloudfront.net/user_3DDXb2XXb22iTA632oCV4ZKM1Kd';
 
-export const heroImage = `${HF}/hf_20260522_112617_40fbea47-d679-452f-b200-432bdde10be7_min.webp`;
+// Hero: Drohnen-3/4-Ansicht modernes Schweizer EFH-Dach (frisch eingedeckt, anthrazit, Voralpen-Hintergrund).
+// Alternative Hero-Varianten: heroAlternatives.detailZink (Doppelfalz-Detail) oder heroAlternatives.bauernhausTonziegel (warmer Bauernhaus-Look).
+export const heroImage = `${HF}/hf_20260522_122207_fc3b8bb4-8de2-4472-be61-666d10c0d85b_min.webp`;
+
+export const heroAlternatives = {
+  hausTotal: `${HF}/hf_20260522_112617_40fbea47-d679-452f-b200-432bdde10be7_min.webp`,
+  detailZink: `${HF}/hf_20260522_122212_10920c88-b947-4db8-9933-d2fece19aa30_min.webp`,
+  bauernhausTonziegel: `${HF}/hf_20260522_122217_3ecf7b5d-2ded-4b89-946a-b6e41d2a6bc2_min.webp`,
+} as const;
+
 export const ctaImage = `${HF}/hf_20260522_114159_cfc567f1-5516-454f-9577-44e6d6c20e19_min.webp`;
 
 export const beforeAfterImages = {
