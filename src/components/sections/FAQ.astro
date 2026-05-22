@@ -1,0 +1,46 @@
+---
+import { faq } from '~/data/faq';
+import Accordion from '~/components/ui/Accordion.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+interface Props {
+  items?: typeof faq;
+  title?: string;
+  intro?: string;
+}
+
+const {
+  items = faq,
+  title = 'Häufige Fragen',
+  intro = 'Was Kunden uns am Telefon fragen — und unsere ehrlichen Antworten.',
+} = Astro.props;
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((q) => ({
+    '@type': 'Question',
+    name: q.question,
+    acceptedAnswer: { '@type': 'Answer', text: q.answer },
+  })),
+};
+---
+<AnimatedSection class="section-pad bg-white">
+  <div class="container-narrow">
+    <div class="text-center">
+      <span class="text-xs font-semibold uppercase tracking-wider text-accent">FAQ</span>
+      <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">{title}</h2>
+      <p class="mt-3 text-base leading-relaxed text-muted">{intro}</p>
+    </div>
+
+    <div class="mt-12">
+      {items.map((item) => (
+        <Accordion question={item.question}>
+          {item.answer}
+        </Accordion>
+      ))}
+    </div>
+
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  </div>
+</AnimatedSection>

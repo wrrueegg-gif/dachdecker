@@ -1,0 +1,63 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+const articles = [
+  {
+    slug: 'sturmschutz-vor-herbst',
+    title: 'Sturmschutz vor dem Herbst — diese vier Punkte am Dach jetzt prüfen',
+    date: '2026-09-12',
+    excerpt: 'Lose Ziegel, verstopfte Rinnen, vergessene Anschlüsse: Wo Stürme typischerweise zuerst zuschlagen — und was Sie selbst kontrollieren können.',
+  },
+  {
+    slug: 'foerderung-solar-zh',
+    title: 'Solar-Förderung im Kanton Zürich 2026 — was sich geändert hat',
+    date: '2026-04-03',
+    excerpt: 'Pronovo, Kantons-Beitrag, Gemeinde-Förderung: ein nüchterner Überblick über die Fördertöpfe und wann sich welcher rechnet.',
+  },
+  {
+    slug: 'flachdach-begruenung-statik',
+    title: 'Flachdach begrünen — was geht statisch, was nicht?',
+    date: '2026-02-18',
+    excerpt: 'Extensive Sedum-Decke geht fast immer. Bei intensiver Begrünung mit Bewässerung wird es interessanter. Was Sie vor dem Anruf wissen sollten.',
+  },
+];
+---
+<Layout
+  title="Aktuell — Blog & Wissen | SADA AG"
+  description="Aktuelles rund ums Dach: Sturmschutz, Förderprogramme, Begrünung. Wissens-Artikel vom SADA-Team."
+>
+  <ServiceHero
+    eyebrow="Aktuell"
+    headline="Wissen rund ums Dach."
+    sub="Ehrliche Artikel zu Themen, die Hausbesitzer im Kanton Zürich aktuell beschäftigen — geschrieben aus der Praxis, nicht aus der Marketing-Abteilung."
+  />
+
+  <AnimatedSection class="section-pad bg-white">
+    <div class="container-wide">
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {articles.map((a) => (
+          <a
+            href={`/aktuell/${a.slug}`}
+            class="group flex flex-col gap-3 rounded-2xl border border-border bg-bone p-7 transition-all hover:-translate-y-1 hover:border-accent/30 hover:shadow-soft"
+          >
+            <time datetime={a.date} class="text-xs font-semibold uppercase tracking-wider text-accent">{new Date(a.date).toLocaleDateString('de-CH', { day: '2-digit', month: 'long', year: 'numeric' })}</time>
+            <h3 class="font-display text-xl font-semibold text-primary-dark group-hover:text-accent">{a.title}</h3>
+            <p class="text-sm leading-relaxed text-muted">{a.excerpt}</p>
+            <span class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-dark group-hover:text-accent">
+              Weiterlesen
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-1" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </AnimatedSection>
+
+  <FinalCTA />
+</Layout>

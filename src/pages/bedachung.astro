@@ -1,0 +1,68 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import BeforeAfterGallery from '~/components/sections/BeforeAfterGallery.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import { heroImage } from '~/data/images';
+
+const features = [
+  {
+    title: 'Steildach',
+    text: 'Ziegel, Eternit, Steinplatten. Vom Einzeltausch bis zur Komplettneueindeckung mit modernster Unterdach-Technik nach SIA-Norm.',
+  },
+  {
+    title: 'Flachdach',
+    text: 'Bitumen, Folie, Kies oder Begrünung. Wir planen Aufbau und Entwässerung so, dass Ihr Flachdach 30+ Jahre dicht bleibt.',
+  },
+  {
+    title: 'Metalldach',
+    text: 'Prefa, Doppelfalz Zink/Titanzink, Sinus- und Trapezblech. Für moderne Architektur und für historische Bauten.',
+  },
+  {
+    title: 'Dämmung & Abdichtung',
+    text: 'Aufdach-, Zwischensparren- und Untersparrendämmung. Energiestandard von Minergie bis Minergie-P kompatibel.',
+  },
+  {
+    title: 'Reparaturen',
+    text: 'Einzelne Ziegel, undichte Anschlüsse, Sturmschäden. Wir reparieren ehrlich — und sagen klar, wenn eine Sanierung wirtschaftlicher ist.',
+  },
+  {
+    title: 'Beratung & Planung',
+    text: 'Material, Konstruktion, Förderbeiträge, Behördenwege. Wir nehmen Ihnen die Detailfragen ab — und entscheiden tun Sie.',
+  },
+];
+---
+<Layout
+  title="Bedachung in Zürich — Flachdach, Steildach, Metalldach | SADA AG"
+  description="Bedachung im Kanton Zürich: Flachdach, Steildach, Metalldach, Dämmung und Reparaturen. SADA AG seit 1907 in Glattpark Opfikon."
+  preloadHero={heroImage}
+>
+  <ServiceHero
+    eyebrow="Bedachung"
+    headline="Bedachung in Zürich — für jedes Material, jede Konstruktion."
+    sub="Flach-, Steil- und Metalldächer. Wir sanieren, decken neu und unterhalten — seit 1907 mit eigener Belegschaft, eigenen Lernenden, eigener Handschrift."
+    bullets={[
+      'Alle Materialien — Ziegel, Eternit, Bitumen, Folie, Zink',
+      'Eigene Bedachungs-Equipe (keine Subunternehmer)',
+      'SIA-Norm 118 Gewährleistung',
+    ]}
+    bgImage={heroImage}
+  />
+  <TrustStrip />
+  <ServiceFeatures
+    title="Was wir am Dach machen — konkret."
+    intro="Sechs Kompetenzfelder, ein Team. Sie wählen, wir setzen um."
+    features={features}
+  />
+  <BeforeAfterGallery />
+  <Process />
+  <FAQ
+    title="Fragen zur Bedachung"
+    intro="Was uns Privatkundinnen und -kunden beim Erstgespräch am häufigsten fragen."
+  />
+  <FinalCTA />
+</Layout>

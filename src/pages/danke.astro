@@ -1,0 +1,63 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import Button from '~/components/ui/Button.astro';
+import { site } from '~/data/site';
+---
+<Layout
+  title="Danke — Ihre Anfrage ist eingegangen | SADA AG"
+  description="Vielen Dank für Ihre Anfrage. Wir melden uns zeitnah."
+  noIndex
+>
+  <section class="bg-primary-dark text-white">
+    <div class="container-wide py-20 text-center md:py-28">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/20 text-accent">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h1 class="mt-6 font-display text-4xl font-semibold tracking-tight md:text-5xl">
+        Danke — Ihre Anfrage ist eingegangen.
+      </h1>
+      <p class="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-white/80">
+        Wir melden uns zeitnah telefonisch oder per Mail. Bei dringenden Anliegen sind wir rund um die Uhr erreichbar.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-pad bg-white">
+    <div class="container-narrow">
+      <h2 class="text-center font-display text-2xl font-semibold text-primary-dark md:text-3xl">
+        Was passiert jetzt?
+      </h2>
+      <ol class="mt-10 flex flex-col gap-5">
+        <li class="flex gap-5 rounded-2xl border border-border bg-bone p-6">
+          <span class="font-display text-3xl font-semibold leading-none text-accent">1</span>
+          <div>
+            <h3 class="font-display text-lg font-semibold text-primary-dark">Wir prüfen Ihre Anfrage</h3>
+            <p class="mt-1 text-base leading-relaxed text-muted">Eine Bedachungs-Fachperson schaut sich Ihr Anliegen an und überlegt, wie wir am besten helfen können.</p>
+          </div>
+        </li>
+        <li class="flex gap-5 rounded-2xl border border-border bg-bone p-6">
+          <span class="font-display text-3xl font-semibold leading-none text-accent">2</span>
+          <div>
+            <h3 class="font-display text-lg font-semibold text-primary-dark">Wir melden uns persönlich</h3>
+            <p class="mt-1 text-base leading-relaxed text-muted">Telefonisch oder per Mail — zeitnah. Falls wir eine Vor-Ort-Aufnahme brauchen, vereinbaren wir gleich einen Termin.</p>
+          </div>
+        </li>
+        <li class="flex gap-5 rounded-2xl border border-border bg-bone p-6">
+          <span class="font-display text-3xl font-semibold leading-none text-accent">3</span>
+          <div>
+            <h3 class="font-display text-lg font-semibold text-primary-dark">Schriftliche Offerte</h3>
+            <p class="mt-1 text-base leading-relaxed text-muted">Nach dem Vor-Ort-Termin erhalten Sie unsere schriftliche Offerte — transparent, nachvollziehbar, ohne Kleingedrucktes.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="mt-10 flex flex-wrap justify-center gap-3">
+        <Button href={site.contact.phoneHref} variant="primary" size="lg" icon="phone">{site.contact.phoneFormatted}</Button>
+        <Button href={site.contact.whatsappHref} variant="secondary" size="lg" icon="whatsapp" external>WhatsApp</Button>
+        <Button href="/" variant="ghost" size="lg" icon="arrow">Zurück zur Startseite</Button>
+      </div>
+    </div>
+  </section>
+</Layout>

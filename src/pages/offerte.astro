@@ -1,0 +1,36 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import QuoteCalculator from '~/components/forms/QuoteCalculator.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import { site } from '~/data/site';
+---
+<Layout
+  title="Offerte berechnen — Dachdecker Zürich | SADA AG"
+  description="Kostenlose, unverbindliche Offerte für Bedachung, Spenglerei, Solar im Kanton Zürich. In wenigen Schritten online anfragen."
+>
+  <section class="relative isolate bg-primary-dark text-white">
+    <div class="container-wide py-16 md:py-22 lg:py-24">
+      <div class="mx-auto max-w-2xl text-center">
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white/85 backdrop-blur-sm">
+          Kostenlos & unverbindlich
+        </span>
+        <h1 class="mt-5 font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
+          Offerte berechnen — in wenigen Schritten.
+        </h1>
+        <p class="mt-4 text-lg leading-relaxed text-white/80">
+          Beantworten Sie ein paar Fragen zu Ihrem Vorhaben. Wir melden uns zeitnah mit einer schriftlichen Antwort. Lieber telefonieren? <a href={site.contact.phoneHref} class="font-semibold text-accent hover:underline">{site.contact.phoneFormatted}</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-bone py-12 md:py-16">
+    <div class="container-narrow -mt-24 md:-mt-28">
+      <QuoteCalculator id="offerte" />
+    </div>
+  </section>
+
+  <TrustStrip />
+  <FAQ />
+</Layout>

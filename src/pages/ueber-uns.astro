@@ -1,0 +1,72 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import AboutTeaser from '~/components/sections/AboutTeaser.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+const milestones = [
+  { year: '1907', title: 'Gründung', text: 'Zwölf Zürcher Dachdecker gründen eine Genossenschaft, um gemeinsam bessere Arbeit zu leisten.' },
+  { year: '1960er', title: 'Spenglerei eigenständig', text: 'Die Spenglerei wird als eigenständiger Bereich aufgebaut und mit der Bedachung zusammengeführt.' },
+  { year: '2000er', title: 'Mehrgewerk-Strategie', text: 'Erweiterung um Solar, Begrünung, Wartung — alles aus der Sicht des Daches.' },
+  { year: '2022', title: 'Burkhalter Gruppe', text: 'Die Muttergesellschaft poenina holding ag fusioniert mit Burkhalter Holding AG.' },
+  { year: 'Heute', title: '160 Profis in Glattpark', text: 'Eigene Bedachungs- und Spenglerei-Equipen, eigene Lernende, eigener Sitz in Glattpark Opfikon.' },
+];
+---
+<Layout
+  title="Über uns — SADA AG seit 1907 | Bedachung Zürich"
+  description="SADA AG — gegründet 1907 als Dachdecker-Genossenschaft. Heute 160 Mitarbeitende in Glattpark Opfikon, Teil der Burkhalter Gruppe."
+>
+  <ServiceHero
+    eyebrow="Über uns"
+    headline="117 Jahre Bedachung — ein Betrieb, drei Generationen."
+    sub="Was 1907 mit zwölf Zürcher Dachdeckern begann, ist heute ein Betrieb mit 160 Mitarbeitenden, eigener Lehrlingsausbildung und Sitz in Glattpark Opfikon."
+    bullets={['Gegründet 1907', '160 Mitarbeitende', 'Teil der Burkhalter Gruppe']}
+  />
+  <TrustStrip />
+
+  <AnimatedSection class="section-pad bg-white">
+    <div class="container-wide">
+      <div class="max-w-3xl">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Geschichte</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">Wichtige Stationen.</h2>
+      </div>
+      <ol class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+        {milestones.map((m) => (
+          <li class="relative flex flex-col gap-2 rounded-2xl border border-border bg-bone p-6">
+            <span class="font-display text-3xl font-semibold leading-none text-accent" style="font-variant-numeric: tabular-nums;">{m.year}</span>
+            <h3 class="font-display text-base font-semibold text-primary-dark">{m.title}</h3>
+            <p class="text-sm leading-relaxed text-muted">{m.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </AnimatedSection>
+
+  <AboutTeaser />
+
+  <AnimatedSection class="section-pad bg-bone">
+    <div class="container-wide grid grid-cols-1 gap-12 md:grid-cols-2">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Werte</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">Woran Sie uns messen können.</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-5">
+        {[
+          { t: 'Ehrliche Beratung', d: 'Wir empfehlen das, was wir auch im eigenen Haus machen würden — auch wenn das weniger Umsatz heisst.' },
+          { t: 'Termine halten', d: 'Wenn wir am 12. anfangen, dann fangen wir am 12. an. Wenn etwas dazwischen kommt, hören Sie es von uns vor dem Termin, nicht danach.' },
+          { t: 'Aufgeräumte Baustelle', d: 'Tägliches Aufräumen, abgedeckte Fassaden, abgeschirmte Eingänge. Dass es laut wird, lässt sich nicht ändern. Dass es chaotisch wird, schon.' },
+          { t: 'Festpreise wo möglich', d: 'Wo wir den Umfang sauber definieren können, schreiben wir Festpreis. Wo wir wirklich nicht wissen, was kommt (z.B. verdeckte Schäden), sagen wir das vorab und einigen uns auf Stundenansätze.' },
+        ].map((v) => (
+          <div class="rounded-2xl border border-border bg-white p-6 shadow-soft">
+            <h3 class="font-display text-lg font-semibold text-primary-dark">{v.t}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-muted">{v.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </AnimatedSection>
+
+  <FinalCTA />
+</Layout>

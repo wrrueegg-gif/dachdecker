@@ -1,0 +1,52 @@
+---
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+import Button from '~/components/ui/Button.astro';
+---
+<AnimatedSection class="section-pad bg-bone">
+  <div class="container-wide grid grid-cols-1 gap-12 lg:grid-cols-[5fr_7fr] lg:items-center">
+    <div class="relative">
+      <div class="aspect-[4/5] w-full overflow-hidden rounded-2xl bg-primary-dark/10 shadow-soft">
+        <div class="flex h-full w-full items-center justify-center text-center text-muted">
+          <div class="px-6">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="mx-auto mb-3 text-primary-dark/40" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p class="font-display text-base font-semibold text-primary-dark">Echtes Team-Foto hier einsetzen</p>
+            <p class="mt-1.5 text-xs leading-relaxed text-muted">Tommaso Cascione (Bereichsleiter Bedachung & Spenglerei) oder Team-Aufnahme vor dem Sitz in Glattpark. 4:5 Hochformat.</p>
+          </div>
+        </div>
+      </div>
+      <div class="absolute -bottom-6 -right-6 hidden rounded-2xl border border-border bg-white p-5 shadow-lift md:block">
+        <span class="font-display text-3xl font-semibold text-primary-dark" style="font-variant-numeric: tabular-nums;">117</span>
+        <span class="block text-xs uppercase tracking-wide text-muted">Jahre Bedachung</span>
+      </div>
+    </div>
+
+    <div>
+      <span class="text-xs font-semibold uppercase tracking-wider text-accent">Über SADA</span>
+      <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">
+        Gegründet 1907 als Dachdecker-Genossenschaft. Heute 160 Profis aus Glattpark.
+      </h2>
+      <div class="mt-5 flex flex-col gap-4 text-base leading-relaxed text-ink">
+        <p>
+          Vor 117 Jahren haben sich zwölf Zürcher Dachdecker zusammengeschlossen, um gemeinsam bessere Arbeit zu leisten als jeder für sich. Daraus ist SADA geworden — heute ein Betrieb mit rund 160 Mitarbeitenden, eigener Lehrlingsausbildung und Schwerpunkt auf Bedachung und Spenglerei.
+        </p>
+        <p>
+          Seit 2022 sind wir Teil der <strong class="text-primary-dark">Burkhalter Gruppe</strong>, dem grössten Anbieter für gewerkübergreifende Gebäudetechnik in der Schweiz. Was bleibt: das Team in Glattpark, die Handschrift, der Anspruch. Was wir dazugewonnen haben: die Stabilität eines Konzerns mit 4'600 Profis.
+        </p>
+      </div>
+      <ul class="mt-6 grid grid-cols-1 gap-2.5 text-sm text-ink sm:grid-cols-2">
+        <li class="inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>Eigene Lehrlingsausbildung (Dachdecker & Spengler)</li>
+        <li class="inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>Mitglied Gebäudehülle Schweiz</li>
+        <li class="inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>Bauwesenversicherung über Konzern</li>
+        <li class="inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>Sitz in Glattpark Opfikon</li>
+      </ul>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <Button href="/ueber-uns" variant="primary" size="md" icon="arrow">Mehr über uns</Button>
+        <Button href="/team" variant="secondary" size="md" icon="arrow">Team kennenlernen</Button>
+      </div>
+    </div>
+  </div>
+</AnimatedSection>

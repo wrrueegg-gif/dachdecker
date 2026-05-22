@@ -1,0 +1,102 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import BeforeAfterGallery from '~/components/sections/BeforeAfterGallery.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+import { projects } from '~/data/projects';
+import { heroImage } from '~/data/images';
+
+const categories = [
+  { value: 'all', label: 'Alle' },
+  { value: 'steildach', label: 'Steildach' },
+  { value: 'flachdach', label: 'Flachdach' },
+  { value: 'metalldach', label: 'Metalldach' },
+  { value: 'spenglerei', label: 'Spenglerei' },
+  { value: 'solar', label: 'Solar' },
+  { value: 'begruenung', label: 'Begrünung' },
+];
+---
+<Layout
+  title="Referenzen — Dächer im Kanton Zürich | SADA AG"
+  description="Realisierte Bedachungs- und Spenglerei-Projekte im Kanton Zürich. Vorher-Nachher-Galerie und Projekt-Details."
+  preloadHero={heroImage}
+>
+  <ServiceHero
+    eyebrow="Referenzen"
+    headline="Dächer im Kanton Zürich, gemacht von uns."
+    sub="Vom Einfamilienhaus in Wallisellen über das Mehrfamilienhaus in Glattpark bis zum Bauernhaus in Bassersdorf. Jedes Projekt mit echtem Vorher und Nachher."
+    bullets={['Über 800 dokumentierte Projekte', 'Im ganzen Kanton Zürich', 'Privat, Gewerbe, öffentliche Hand']}
+    bgImage={heroImage}
+  />
+  <TrustStrip />
+
+  <AnimatedSection class="section-pad bg-bone">
+    <div class="container-wide">
+      <div class="flex flex-wrap items-center gap-2" data-ref-filters>
+        {categories.map((c) => (
+          <button
+            type="button"
+            data-cat={c.value}
+            class={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${c.value === 'all' ? 'border-accent bg-accent text-white' : 'border-border bg-white text-ink hover:border-accent hover:text-accent'}`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3" data-ref-grid>
+        {projects.map((p) => (
+          <article
+            class="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lift"
+            data-cat={p.category}
+          >
+            <div class="aspect-[4/3] w-full overflow-hidden rounded-xl bg-bone">
+              <img src={p.after} alt={p.title} loading="lazy" decoding="async" class="h-full w-full object-cover" />
+            </div>
+            <div class="px-1">
+              <span class="text-xs font-semibold uppercase tracking-wider text-accent">{p.category}</span>
+              <h3 class="mt-1 font-display text-lg font-semibold text-primary-dark">{p.title}</h3>
+              <p class="mt-1 text-sm text-muted">{p.city} · {p.duration}</p>
+              <p class="mt-2 text-sm leading-relaxed text-ink">{p.scope}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </AnimatedSection>
+
+  <BeforeAfterGallery />
+  <FinalCTA />
+</Layout>
+
+<script>
+  const init = () => {
+    const filters = document.querySelectorAll<HTMLButtonElement>('[data-ref-filters] button');
+    const grid = document.querySelector<HTMLElement>('[data-ref-grid]');
+    if (!filters.length || !grid) return;
+    const articles = Array.from(grid.querySelectorAll<HTMLElement>('article'));
+    filters.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat || 'all';
+        filters.forEach((b) => {
+          const active = b === btn;
+          b.classList.toggle('border-accent', active);
+          b.classList.toggle('bg-accent', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('border-border', !active);
+          b.classList.toggle('bg-white', !active);
+          b.classList.toggle('text-ink', !active);
+        });
+        articles.forEach((a) => {
+          const show = cat === 'all' || a.dataset.cat === cat;
+          a.hidden = !show;
+        });
+      });
+    });
+  };
+  if (document.readyState === 'complete') init();
+  else window.addEventListener('load', init);
+  document.addEventListener('astro:page-load', init);
+</script>

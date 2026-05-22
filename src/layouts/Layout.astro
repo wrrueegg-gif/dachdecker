@@ -1,0 +1,118 @@
+---
+import '~/styles/global.css';
+import TopBar from '~/components/global/TopBar.astro';
+import Footer from '~/components/global/Footer.astro';
+import StickyMobileBar from '~/components/global/StickyMobileBar.astro';
+import { site } from '~/data/site';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  noIndex?: boolean;
+  preloadHero?: string;
+  canonical?: string;
+}
+
+const {
+  title,
+  description,
+  ogImage,
+  noIndex = false,
+  preloadHero,
+  canonical,
+} = Astro.props;
+
+const url = new URL(Astro.url.pathname, site.url).toString();
+const finalCanonical = canonical || url;
+const finalOg = ogImage || '/og-default.jpg';
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'RoofingContractor',
+  name: site.legalName,
+  description: 'Dachdecker und Spengler im Kanton Zürich seit 1907.',
+  url: site.url,
+  telephone: site.contact.phone,
+  email: site.contact.email,
+  foundingDate: String(site.founded),
+  numberOfEmployees: site.employees,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: site.address.street,
+    postalCode: site.address.zip,
+    addressLocality: site.address.city,
+    addressRegion: site.address.canton,
+    addressCountry: site.address.country,
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 47.4234,
+    longitude: 8.5722,
+  },
+  areaServed: {
+    '@type': 'AdministrativeArea',
+    name: 'Kanton Zürich',
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '07:00',
+      closes: '17:00',
+    },
+  ],
+  parentOrganization: {
+    '@type': 'Organization',
+    name: site.parentGroup.name,
+  },
+};
+---
+<!doctype html>
+<html lang="de-CH">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={finalCanonical} />
+    {noIndex && <meta name="robots" content="noindex,nofollow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content={finalOg} />
+    <meta property="og:locale" content="de_CH" />
+    <meta property="og:site_name" content={site.legalName} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={finalOg} />
+
+    <meta name="theme-color" content="#1B2A35" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    {preloadHero && (
+      <link rel="preload" as="image" href={preloadHero} fetchpriority="high" />
+    )}
+
+    <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+
+    <ClientRouter />
+  </head>
+  <body>
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary-dark focus:px-4 focus:py-2 focus:text-white">Zum Inhalt springen</a>
+    <TopBar />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <StickyMobileBar />
+  </body>
+</html>

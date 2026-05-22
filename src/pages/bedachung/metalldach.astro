@@ -1,0 +1,34 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Doppelfalz Zink', text: 'Klassisches Stehfalz-System. Ruhige, präzise Optik. Zink ist langlebig, wartungsarm, edel.' },
+  { title: 'Doppelfalz Titanzink', text: 'Die Premium-Variante mit besserer Patina-Bildung. Vorpatiniert auf Wunsch.' },
+  { title: 'Prefa Aluminium', text: 'Leicht, farbig pulverbeschichtet, vorgefertigte Systeme. Schnelle Verlegung, viele Farben.' },
+  { title: 'Sinus- und Trapezblech', text: 'Industriell oder für Anbauten und Carports. Wirtschaftlich, robust, schnell installiert.' },
+  { title: 'Edelstahl', text: 'Für Sonderanwendungen und in Verbindung mit Spenglerarbeiten — höchste Korrosionsfestigkeit.' },
+  { title: 'Anschlüsse & Spenglerei', text: 'Bei Metalldach entscheidet die Spenglerei. Wir machen Dach und Anschlüsse aus einem Bereich.' },
+];
+---
+<Layout
+  title="Metalldach in Zürich — Prefa, Doppelfalz, Sinusblech | SADA"
+  description="Metalldächer im Kanton Zürich: Prefa, Doppelfalz Zink/Titanzink, Sinus- und Trapezblech. Dach und Spenglerei aus einer Hand."
+>
+  <ServiceHero
+    eyebrow="Metalldach"
+    headline="Metalldach in Zürich — präzise Falztechnik und moderne Systeme."
+    sub="Vom Doppelfalz-Zinkdach am denkmalgeschützten Bauernhaus bis zum Prefa-System am modernen Anbau. Dach und Spenglerei in einem Bereich, ein Ansprechpartner."
+    bullets={['Zink, Titanzink, Aluminium, Edelstahl', 'Stehfalz, Schindel, Kassette', 'Spenglerarbeiten inklusive']}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was am Metalldach möglich ist." features={features} />
+  <Process />
+  <FAQ title="Fragen zum Metalldach" />
+  <FinalCTA />
+</Layout>

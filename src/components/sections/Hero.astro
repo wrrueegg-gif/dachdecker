@@ -1,0 +1,92 @@
+---
+import { site } from '~/data/site';
+import { heroImage } from '~/data/images';
+import QuoteCalculator from '~/components/forms/QuoteCalculator.astro';
+import Button from '~/components/ui/Button.astro';
+
+interface Props {
+  headline?: string;
+  sub?: string;
+  trustBullets?: string[];
+  bgImage?: string;
+}
+
+const {
+  headline = 'Dachdecker in Zürich — seit 1907 für jedes Dach im Kanton.',
+  sub = '160 Profis, drei Generationen Handwerk, 24-Stunden-Notdienst. Wir decken, sanieren und unterhalten Flach-, Steil- und Metalldächer in der ganzen Region.',
+  trustBullets = [
+    'Meisterbetrieb seit 1907',
+    'Teil der Burkhalter Gruppe',
+    '160 Mitarbeitende in Glattpark',
+    '24/7 Notdienst',
+  ],
+  bgImage = heroImage,
+} = Astro.props;
+---
+<section class="relative isolate overflow-hidden bg-primary-dark">
+  <div class="absolute inset-0 z-0">
+    <img
+      src={bgImage}
+      alt=""
+      class="h-full w-full object-cover object-center"
+      fetchpriority="high"
+      loading="eager"
+      decoding="async"
+      width="2560"
+      height="1080"
+    />
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-dark/95 via-primary-dark/70 to-primary-dark/20"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-primary-dark/60 via-transparent to-transparent"></div>
+  </div>
+
+  <div class="container-wide relative z-10 grid grid-cols-1 gap-10 py-16 md:py-22 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:py-28">
+    <div class="flex flex-col justify-center text-white">
+      <span class="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white/80 backdrop-blur-sm">
+        <span class="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"></span>
+        Schweizer Bedachung seit 1907
+      </span>
+
+      <h1 class="mt-5 font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl lg:text-6xl xl:text-7xl">
+        {headline}
+      </h1>
+
+      <p class="mt-5 max-w-xl text-lg leading-relaxed text-white/80 md:text-xl">
+        {sub}
+      </p>
+
+      <ul class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-white/85">
+        {trustBullets.map((b) => (
+          <li class="inline-flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div class="mt-9 flex flex-wrap items-center gap-3">
+        <Button href="#offerte" variant="primary" size="lg" icon="calculator">
+          Offerte berechnen
+        </Button>
+        <Button
+          href={site.contact.phoneHref}
+          variant="ghost-light"
+          size="lg"
+          icon="phone"
+          class="border border-white/25"
+        >
+          {site.contact.phoneFormatted}
+        </Button>
+      </div>
+
+      <p class="mt-4 text-xs text-white/55">
+        Kostenlos und unverbindlich · Antwort zeitnah · 24h-Notdienst rund um die Uhr
+      </p>
+    </div>
+
+    <div class="lg:pt-2">
+      <QuoteCalculator />
+    </div>
+  </div>
+</section>

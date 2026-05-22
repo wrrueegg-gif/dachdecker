@@ -1,0 +1,62 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import { heroImage } from '~/data/images';
+
+const features = [
+  {
+    title: 'Dachrinnen & Fallrohre',
+    text: 'Kupfer, Zink, Titanzink. Auf Mass gefertigt, sauber verlötet, mit jahrzehntelanger Lebensdauer.',
+  },
+  {
+    title: 'Dachränder & Verblechungen',
+    text: 'Präzise Anschlüsse an Wänden, Kaminen, Lichtkuppeln und Antennen. Wo andere Silikon nehmen, machen wir Spenglerarbeit.',
+  },
+  {
+    title: 'Blitzschutz',
+    text: 'Geprüfte Anlagen nach SEV-Norm. Periodische Kontrollen und Fachattest auf Wunsch — direkt vom selben Team, das das Dach betreut.',
+  },
+  {
+    title: 'Fassadenverkleidungen',
+    text: 'Metallfassaden in Stehfalz, Schindel oder Kassette. Wetterhülle, die jahrzehntelang hält und gestalterisch Akzente setzt.',
+  },
+  {
+    title: 'Kaminverkleidungen',
+    text: 'Kaminköpfe in Edelstahl, Kupfer oder Zink eingekleidet. Wasserdicht, optisch sauber, dauerhaft.',
+  },
+  {
+    title: 'Historische Sanierungen',
+    text: 'Originaltreue Spenglerarbeit für Altbau und denkmalgeschützte Liegenschaften — wir kennen die traditionellen Techniken.',
+  },
+];
+---
+<Layout
+  title="Spenglerei in Zürich — Dachrinnen, Verblechungen, Blitzschutz | SADA AG"
+  description="Spenglerei aus Glattpark Opfikon: Dachrinnen, Fallrohre, Verblechungen, Blitzschutz und Fassadenverkleidungen. Schweizer Handwerk seit 1907."
+  preloadHero={heroImage}
+>
+  <ServiceHero
+    eyebrow="Spenglerei"
+    headline="Spenglerei in Zürich — präzises Metallhandwerk seit 1907."
+    sub="Dachrinnen, Verblechungen, Blitzschutz, Fassaden. Mit einer Hand gemacht, die seit drei Generationen weiss, wo der Falz sitzt."
+    bullets={[
+      'Kupfer, Zink, Titanzink, Edelstahl',
+      'Bedachung und Spenglerei aus einem Bereich',
+      'Geprüfte Blitzschutzanlagen nach SEV',
+    ]}
+    bgImage={heroImage}
+  />
+  <TrustStrip />
+  <ServiceFeatures
+    title="Was die SADA-Spengler können."
+    features={features}
+  />
+  <Process />
+  <FAQ title="Fragen zur Spenglerei" intro="Was wir am häufigsten gefragt werden — und unsere ehrlichen Antworten." />
+  <FinalCTA />
+</Layout>

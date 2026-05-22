@@ -1,0 +1,78 @@
+---
+import { site } from '~/data/site';
+import { ctaImage } from '~/data/images';
+import Button from '~/components/ui/Button.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+---
+<AnimatedSection class="relative isolate overflow-hidden bg-primary-dark text-white">
+  <div class="absolute inset-0 z-0">
+    <img
+      src={ctaImage}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      class="h-full w-full object-cover object-center"
+      width="2560"
+      height="1080"
+    />
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-dark/95 via-primary-dark/75 to-primary-dark/40"></div>
+  </div>
+
+  <div class="container-wide relative z-10 section-pad">
+    <div class="max-w-3xl">
+      <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white/85 backdrop-blur-sm">
+        Bereit, wenn Sie es sind
+      </span>
+      <h2 class="mt-5 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl lg:text-6xl">
+        Lassen Sie Ihr Dach von Profis machen — seit 1907.
+      </h2>
+      <p class="mt-5 max-w-2xl text-lg leading-relaxed text-white/80">
+        Eine kostenlose Vor-Ort-Beurteilung, eine schriftliche Offerte, ein fixer Termin. Drei Schritte, klar geregelt, ohne Überraschungen.
+      </p>
+      <div class="mt-9 flex flex-wrap items-center gap-3">
+        <Button href="#offerte" variant="primary" size="lg" icon="calculator">
+          Offerte berechnen
+        </Button>
+        <Button
+          href={site.contact.phoneHref}
+          variant="ghost-light"
+          size="lg"
+          icon="phone"
+          class="border border-white/25"
+        >
+          {site.contact.phoneFormatted}
+        </Button>
+        <Button
+          href={site.contact.whatsappHref}
+          variant="ghost-light"
+          size="lg"
+          icon="whatsapp"
+          class="border border-white/25"
+          external
+        >
+          WhatsApp
+        </Button>
+      </div>
+      <div class="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3 text-sm text-white/70">
+        <span class="inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Schriftliche Offerte
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          SIA-Norm 118 Gewährleistung
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          24/7 Notdienst
+        </span>
+      </div>
+    </div>
+  </div>
+</AnimatedSection>

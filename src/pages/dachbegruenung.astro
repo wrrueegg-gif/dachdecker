@@ -1,0 +1,38 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Extensiv (Sedum, Kräuter)', text: 'Pflegearm, leichter Aufbau. Ideal für die meisten Flachdächer, sehr gutes Verhältnis Aufwand zu Nutzen.' },
+  { title: 'Intensiv (Dachgarten)', text: 'Begehbare Gärten auf dem Dach inkl. Bewässerung. Höhere Aufbauhöhe — wir prüfen die Statik mit Ihrem Architekten.' },
+  { title: 'Lebensdauer der Abdichtung', text: 'Begrünungen verdoppeln typischerweise die Lebensdauer der darunterliegenden Abdichtung gegenüber Kies oder offener Folie.' },
+  { title: 'Wärmehaushalt', text: 'Im Sommer kühlend, im Winter zusätzlich dämmend. Spürbar im Innenraum, vor allem unter Flachdach-Wohnungen.' },
+  { title: 'Förderprogramme', text: 'Kanton Zürich und einige Gemeinden fördern Begrünungen. Wir machen die Anmeldung mit.' },
+  { title: 'Solar + Begrünung', text: 'Beide Themen lassen sich kombinieren — wir planen Trägerschiene und Begrünung gemeinsam, damit nichts kollidiert.' },
+];
+---
+<Layout
+  title="Dachbegrünung Zürich — Sedum und Dachgarten | SADA AG"
+  description="Extensive und intensive Dachbegrünungen im Kanton Zürich. Wir planen, bauen und unterhalten Gründächer mit dem Dachdecker-Blickwinkel."
+>
+  <ServiceHero
+    eyebrow="Dachbegrünung"
+    headline="Gründächer in Zürich — gut für Klima und Lebensdauer."
+    sub="Extensive Sedum-Decke oder intensiver Dachgarten. Bauphysikalisch sauber, statisch geprüft, kompatibel mit Photovoltaik."
+    bullets={[
+      'Extensiv und intensiv',
+      'Verlängert Abdichtungs-Lebensdauer',
+      'Förderbeiträge Kanton Zürich vorbereitet',
+    ]}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was wir am Gründach leisten." features={features} />
+  <Process />
+  <FAQ title="Fragen zur Dachbegrünung" />
+  <FinalCTA />
+</Layout>

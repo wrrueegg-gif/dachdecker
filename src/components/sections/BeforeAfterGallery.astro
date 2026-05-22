@@ -1,0 +1,44 @@
+---
+import { projects } from '~/data/projects';
+import BeforeAfterSlider from '~/components/ui/BeforeAfterSlider.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+import Button from '~/components/ui/Button.astro';
+---
+<AnimatedSection class="section-pad bg-bone">
+  <div class="container-wide">
+    <div class="mx-auto max-w-3xl text-center">
+      <span class="text-xs font-semibold uppercase tracking-wider text-accent">Vorher · Nachher</span>
+      <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">
+        So sehen unsere Dächer aus — vorher und nachher.
+      </h2>
+      <p class="mt-3 text-base leading-relaxed text-muted">
+        Ziehen Sie den Schieber, um den Unterschied zu sehen. Alle Projekte aus dem Kanton Zürich, alle vom SADA-Team realisiert.
+      </p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {projects.map((p) => (
+        <article class="flex flex-col gap-4">
+          <BeforeAfterSlider
+            before={p.before}
+            after={p.after}
+            beforeAlt={`${p.title} – Vorher`}
+            afterAlt={`${p.title} – Nachher`}
+            initial={50}
+          />
+          <div>
+            <h3 class="font-display text-lg font-semibold text-primary-dark">{p.title}</h3>
+            <p class="mt-1 text-sm text-muted">{p.city} · {p.duration}</p>
+            <p class="mt-2 text-sm leading-relaxed text-ink">{p.scope}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <div class="mt-12 flex justify-center">
+      <Button href="#offerte" variant="primary" size="lg" icon="calculator">
+        Eigenes Projekt berechnen
+      </Button>
+    </div>
+  </div>
+</AnimatedSection>

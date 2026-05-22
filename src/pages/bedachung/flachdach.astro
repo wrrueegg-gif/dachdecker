@@ -1,0 +1,34 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Bitumen-Abdichtung', text: 'Mehrlagig, dauerhaft, bewährt seit Jahrzehnten. Standard für die meisten Flachdächer in der Schweiz.' },
+  { title: 'Folien-Abdichtung', text: 'PVC oder FPO. Schnellere Verlegung, durchstossfest, ideal bei aufwendigen Anschlussdetails.' },
+  { title: 'Kies-Schüttung', text: 'Klassische Ballast-Schicht. Schützt die Abdichtung, dämpft UV-Belastung, erleichtert Inspektion.' },
+  { title: 'Begrünung', text: 'Extensive Sedum-Decke oder intensiver Dachgarten — verlängert die Lebensdauer der Abdichtung deutlich.' },
+  { title: 'Entwässerung', text: 'Dachgullis, Notüberläufe, Attika-Anschlüsse. Wir planen die Entwässerung so, dass auch bei Starkregen nichts steht.' },
+  { title: 'Anschlüsse', text: 'Kamine, Lichtkuppeln, Aufbauten — bei Flachdach entscheiden Anschlussdetails. Wir machen die mit der Spenglerei zusammen.' },
+];
+---
+<Layout
+  title="Flachdach sanieren in Zürich — Bitumen, Folie, Begrünung | SADA"
+  description="Flachdach-Sanierung und -Neueindeckung im Kanton Zürich. Bitumen, Folie, Kies, Begrünung. Wir planen Aufbau und Entwässerung so, dass 30+ Jahre dicht bleibt."
+>
+  <ServiceHero
+    eyebrow="Flachdach"
+    headline="Flachdach sanieren in Zürich — dicht für 30+ Jahre."
+    sub="Bitumen, Folie, Kies oder Begrünung. Wir planen Aufbau, Anschlüsse und Entwässerung so, dass Ihr Flachdach jahrzehntelang Ruhe gibt."
+    bullets={['Mehrlagige Abdichtung nach SIA-Norm', 'Begrünung kompatibel', 'Inkl. Entwässerungs-Planung']}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was am Flachdach machbar ist." features={features} />
+  <Process />
+  <FAQ title="Fragen zum Flachdach" />
+  <FinalCTA />
+</Layout>

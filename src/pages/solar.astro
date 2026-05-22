@@ -1,0 +1,41 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Aufdach-PV', text: 'Auf bestehender Eindeckung — sinnvoll bei jüngerem Dach. Schnell installiert, geringe bauliche Eingriffe.' },
+  { title: 'In-Dach-PV', text: 'Module ersetzen die Ziegel-Fläche. Optisch flush, baulich integriert, ideal bei ohnehin geplanter Dachsanierung.' },
+  { title: 'Bauphysik korrekt', text: 'Wir denken Solar vom Dach her — Hinterlüftung, Wasserführung, Anschlüsse bleiben dicht. Das hält das Modul-Risiko klein.' },
+  { title: 'Förderung & Anmeldung', text: 'Pronovo-Anmeldung, Kanton-Zürich-Förderbeitrag und Netzbetreiber-Koordination machen wir für Sie.' },
+  { title: 'Wartung & Service', text: 'Periodische Reinigung und Sichtkontrolle. Bei Wartungsvertrag prüfen wir Module und Dach gleich gemeinsam.' },
+  { title: 'Ein Ansprechpartner', text: 'Sie haben einen Partner für Dach + Solar — bei Streitfall keine Schuldzuweisungen zwischen Gewerken.' },
+];
+---
+<Layout
+  title="Solaranlagen Zürich — Photovoltaik vom Dachdecker | SADA AG"
+  description="Photovoltaik direkt vom Dachdecker. In-Dach und Aufdach. Bauphysikalisch korrekt eingebunden, ohne Schnittstellen-Risiko zwischen Gewerken."
+>
+  <ServiceHero
+    eyebrow="Photovoltaik"
+    headline="Solaranlagen in Zürich — direkt vom Dachdecker."
+    sub="Wer das Dach kennt, baut die Photovoltaik auch korrekt ein. Wir denken Solar aus der Sicht der Bauphysik — und schliessen das Dichtungsrisiko aus."
+    bullets={[
+      'In-Dach und Aufdach',
+      'Pronovo-Anmeldung inklusive',
+      'Ein Ansprechpartner für Dach + Solar',
+    ]}
+  />
+  <TrustStrip />
+  <ServiceFeatures
+    title="Was Sie bei SADA-Solar bekommen."
+    features={features}
+  />
+  <Process />
+  <FAQ title="Fragen zur Solaranlage" />
+  <FinalCTA />
+</Layout>

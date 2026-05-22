@@ -1,0 +1,36 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import BeforeAfterGallery from '~/components/sections/BeforeAfterGallery.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Aufnahme & Beurteilung', text: 'Wir prüfen Substanz, Konstruktion und Dämmung — und sagen ehrlich, ob Sanierung oder Neueindeckung sinnvoller ist.' },
+  { title: 'Kostenrahmen vor Detailplanung', text: 'Sie erhalten zuerst eine grobe Kostenschätzung, bevor wir in die Detailplanung gehen. So vermeiden Sie unnötigen Planungsaufwand bei abweichendem Budget.' },
+  { title: 'Energetische Verbesserung', text: 'Eine Sanierung ist die ideale Gelegenheit, Dämmung und Bauphysik auf aktuellen Stand zu bringen.' },
+  { title: 'Förderbeiträge', text: 'Wir kennen die Förderprogramme im Kanton Zürich (Energie, Solar, Begrünung) und bereiten die Anmeldung vor.' },
+  { title: 'Bewohnt sanieren', text: 'In den meisten Fällen können Sie während der Sanierung im Haus wohnen bleiben. Wir planen die Abläufe entsprechend.' },
+  { title: 'Termin- und Festpreis', text: 'Wo der Umfang sauber bestimmbar ist, schreiben wir Festpreis. Termine halten wir, oder informieren proaktiv über Verschiebungen.' },
+];
+---
+<Layout
+  title="Dachsanierung Zürich — wann, was, was kostet es | SADA"
+  description="Dachsanierung im Kanton Zürich: Aufnahme, Kostenrahmen, energetische Verbesserung, Förderprogramme. Ehrliche Beratung seit 1907."
+>
+  <ServiceHero
+    eyebrow="Dachsanierung"
+    headline="Dachsanierung in Zürich — ehrliche Beurteilung statt Verkaufsdruck."
+    sub="Wir nehmen Ihr Dach auf und sagen Ihnen klar, was nötig ist und was nicht. Wer reparieren statt erneuern kann, soll reparieren. Und umgekehrt."
+    bullets={['Aufnahme inkl. Kostenrahmen vor Planung', 'Energetische Verbesserung möglich', 'Bewohnt sanierbar in den meisten Fällen']}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was eine SADA-Dachsanierung ausmacht." features={features} />
+  <BeforeAfterGallery />
+  <Process />
+  <FAQ title="Fragen zur Dachsanierung" />
+  <FinalCTA />
+</Layout>

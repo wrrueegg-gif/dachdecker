@@ -1,0 +1,38 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Jährliche Dachinspektion', text: 'Vor-Ort-Begehung mit Sichtkontrolle Ziegel, Anschlüsse, Spenglerarbeiten, Aufbauten. Mit Fotodokumentation.' },
+  { title: 'Rinnen- und Ablauf-Reinigung', text: 'Verstopfte Rinnen sind der häufigste Grund für Wassereintritte. Wir reinigen Rinnen, Fallrohre und Flachdach-Abläufe.' },
+  { title: 'Bericht & Massnahmenempfehlung', text: 'Sie erhalten einen schriftlichen Wartungsbericht mit Fotos, Massnahmenempfehlung und Dringlichkeit pro Punkt.' },
+  { title: 'Sofortreparatur', text: 'Kleine Schäden (Einzelziegel, Anschluss-Silikon, Schraubdichtung) reparieren wir gleich vor Ort, ohne zweiten Termin.' },
+  { title: 'Wartungsvertrag', text: '1× pro Jahr oder 2× (Frühling und Herbst). Vertraglich geregelt, automatisch terminiert, Sie müssen an nichts denken.' },
+  { title: 'Einzelauftrag', text: 'Kein Vertrag nötig — auch eine einmalige Inspektion kostet einen festen Pauschalbetrag, abhängig von Dachgrösse.' },
+];
+---
+<Layout
+  title="Dachwartung & Unterhalt Zürich — Vorsorge ab 1× pro Jahr | SADA AG"
+  description="Wartung und Unterhalt für Dächer im Kanton Zürich. Jährliche Inspektion mit Bericht, Rinnen-Reinigung, kleine Reparaturen vor Ort."
+>
+  <ServiceHero
+    eyebrow="Wartung & Unterhalt"
+    headline="Wartung schlägt Sanierung — wir prüfen, bevor's teuer wird."
+    sub="Ein gut gewartetes Dach hält rund doppelt so lang wie ein vernachlässigtes. Jährliche Inspektion mit Bericht — als Vertrag oder Einzelauftrag."
+    bullets={[
+      'Schriftlicher Bericht mit Fotos',
+      'Kleinreparaturen direkt vor Ort',
+      'Vertrag oder Einzelauftrag',
+    ]}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was im Wartungsbesuch enthalten ist." features={features} />
+  <Process />
+  <FAQ title="Fragen zur Dachwartung" />
+  <FinalCTA />
+</Layout>

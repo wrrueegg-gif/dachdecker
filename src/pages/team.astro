@@ -1,0 +1,66 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+// Wichtig: Diese Personen sind real (Quelle: sada.ch).
+// Vor Live-Schaltung mit echten Fotos füllen — KI-generierte Personenfotos
+// sind hier explizit nicht akzeptabel.
+const team = [
+  { name: 'Tommaso Cascione', role: 'Geschäftsbereichsleiter Bedachung & Spenglerei', placeholder: true },
+  { name: 'Geschäftsleitung', role: 'Geschäftsleitung SADA AG', placeholder: true },
+  { name: 'Projektleitung Bedachung', role: 'Projektleitung', placeholder: true },
+  { name: 'Projektleitung Spenglerei', role: 'Projektleitung', placeholder: true },
+];
+---
+<Layout
+  title="Team — Ansprechpersonen bei SADA AG"
+  description="Lernen Sie das Team kennen. Tommaso Cascione (Bedachung & Spenglerei) und unsere Projektleitenden in Glattpark Opfikon."
+>
+  <ServiceHero
+    eyebrow="Team"
+    headline="160 Profis. Hier die direkten Ansprechpersonen."
+    sub="Sie wissen vor dem ersten Anruf, mit wem Sie sprechen werden. Keine Hotline, keine Weiterleitung — direkt zur Person."
+  />
+  <TrustStrip />
+
+  <AnimatedSection class="section-pad bg-white">
+    <div class="container-wide">
+      <div class="max-w-3xl">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Ansprechpersonen</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">Wer Sie betreut.</h2>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {team.map((p) => (
+          <article class="flex flex-col gap-4 rounded-2xl border border-border bg-bone p-5">
+            <div class="aspect-[4/5] w-full overflow-hidden rounded-xl bg-primary-dark/5">
+              {p.placeholder && (
+                <div class="flex h-full w-full items-center justify-center px-4 text-center">
+                  <div>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="mx-auto mb-2 text-primary-dark/35" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <p class="text-xs font-medium text-primary-dark/80">Echtes Foto erforderlich</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 class="font-display text-lg font-semibold text-primary-dark">{p.name}</h3>
+              <p class="text-sm text-muted">{p.role}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p class="mt-8 text-sm text-muted">
+        Diese Übersicht wird vor Live-Schaltung durch echte Fotos und vollständige Kontaktdaten ergänzt.
+      </p>
+    </div>
+  </AnimatedSection>
+
+  <FinalCTA />
+</Layout>

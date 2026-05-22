@@ -1,0 +1,28 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import Hero from '~/components/sections/Hero.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import SocialProof from '~/components/sections/SocialProof.astro';
+import BeforeAfterGallery from '~/components/sections/BeforeAfterGallery.astro';
+import Services from '~/components/sections/Services.astro';
+import Process from '~/components/sections/Process.astro';
+import AboutTeaser from '~/components/sections/AboutTeaser.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import { heroImage } from '~/data/images';
+---
+<Layout
+  title="Dachdecker Zürich — SADA AG | Bedachung & Spenglerei seit 1907"
+  description="Dachdecker und Spenglerei in Zürich. Seit 1907 vor Ort, 160 Mitarbeitende in Glattpark Opfikon, 24h-Notdienst. Offerte zeitnah, schriftlich, unverbindlich."
+  preloadHero={heroImage}
+>
+  <Hero />
+  <TrustStrip />
+  <SocialProof />
+  <BeforeAfterGallery />
+  <Services />
+  <Process />
+  <AboutTeaser />
+  <FAQ />
+  <FinalCTA />
+</Layout>

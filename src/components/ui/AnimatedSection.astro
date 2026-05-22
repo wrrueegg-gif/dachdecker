@@ -1,0 +1,36 @@
+---
+interface Props {
+  class?: string;
+  as?: 'section' | 'div' | 'article' | 'header' | 'footer';
+  id?: string;
+}
+const { class: className = '', as: Tag = 'section', id } = Astro.props;
+---
+<Tag id={id} class={`reveal ${className}`}>
+  <slot />
+</Tag>
+
+<script>
+  const observe = () => {
+    const els = document.querySelectorAll<HTMLElement>('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.15 }
+    );
+    els.forEach((el) => io.observe(el));
+  };
+  if (document.readyState === 'complete') observe();
+  else window.addEventListener('load', observe);
+  document.addEventListener('astro:page-load', observe);
+</script>

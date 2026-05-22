@@ -1,0 +1,16 @@
+---
+import { trustFacts } from '~/data/site';
+---
+<section class="bg-primary-mid text-white">
+  <div class="container-wide grid grid-cols-2 gap-6 py-7 md:grid-cols-4 md:gap-10 md:py-9">
+    {trustFacts.map((f) => (
+      <div class="flex flex-col gap-0.5 border-l-2 border-accent pl-4 md:pl-5">
+        <span class="font-display text-2xl font-semibold leading-none tracking-tight md:text-3xl" style="font-variant-numeric: tabular-nums;">
+          {f.value}
+        </span>
+        <span class="text-xs uppercase tracking-wide text-white/65">{f.label}</span>
+        <span class="text-xs text-white/55">{f.meta}</span>
+      </div>
+    ))}
+  </div>
+</section>

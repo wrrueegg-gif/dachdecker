@@ -1,0 +1,34 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import ServiceFeatures from '~/components/sections/ServiceFeatures.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import Process from '~/components/sections/Process.astro';
+import FAQ from '~/components/sections/FAQ.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+
+const features = [
+  { title: 'Betondachsteine', text: 'Robust, günstig, breite Farbpalette. Standard-Lösung für die meisten Wohnliegenschaften.' },
+  { title: 'Tonziegel', text: 'Klassische Optik, sehr lange Lebensdauer (60+ Jahre möglich), unempfindlich gegen Moos.' },
+  { title: 'Eternit', text: 'Faserzement-Platten. Für moderne Architektur und für Anschlüsse, wo Ziegel nicht passen.' },
+  { title: 'Steinplatten', text: 'Naturstein für Altbauten und Bergregion-Architektur. Schwer, aufwendig — aber unverwechselbar.' },
+  { title: 'Unterdach', text: 'Folie, Schalung oder geschlossenes Unterdach — wir wählen das richtige System für Schneefall- und Schlagregenbedingungen vor Ort.' },
+  { title: 'Dämmung', text: 'Aufdach (Sanieren von aussen ohne Innenausbau-Eingriff), Zwischensparren, Untersparren. Bis Minergie-P-Standard.' },
+];
+---
+<Layout
+  title="Steildach sanieren in Zürich — Ziegel, Eternit, Steinplatten | SADA"
+  description="Steildach-Sanierung und -Neueindeckung im Kanton Zürich. Tonziegel, Betondachsteine, Eternit, Steinplatten. Mit fachgerechtem Unterdach und Dämmung."
+>
+  <ServiceHero
+    eyebrow="Steildach"
+    headline="Steildach in Zürich — neu decken oder sanieren."
+    sub="Ton, Beton, Eternit oder Stein: wir wählen mit Ihnen das Material und kümmern uns um Unterdach, Dämmung und Spengleranschlüsse — alles aus einer Hand."
+    bullets={['Alle Materialien', 'Inkl. Dämmung bis Minergie-P', 'Aufdach-Sanierung ohne Innenausbau-Eingriff']}
+  />
+  <TrustStrip />
+  <ServiceFeatures title="Was am Steildach machbar ist." features={features} />
+  <Process />
+  <FAQ title="Fragen zum Steildach" />
+  <FinalCTA />
+</Layout>

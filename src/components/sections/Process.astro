@@ -1,0 +1,51 @@
+---
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+const steps = [
+  {
+    number: '01',
+    title: 'Sie melden sich',
+    desc: 'Über das Offert-Formular, per Telefon oder WhatsApp. Wir hören zu und vereinbaren einen Vor-Ort-Termin — kostenlos und unverbindlich.',
+    time: 'In der Regel innerhalb 24h Rückmeldung',
+  },
+  {
+    number: '02',
+    title: 'Wir nehmen auf',
+    desc: 'Ein Bedachungs-Profi schaut sich Ihr Dach an, klärt Material- und Konstruktionsfragen und erstellt eine schriftliche, nachvollziehbare Offerte.',
+    time: 'Offerte zeitnah nach Vor-Ort-Termin',
+  },
+  {
+    number: '03',
+    title: 'Wir setzen um',
+    desc: 'Mit fixem Termin, klarer Bauleitung und täglich aufgeräumter Baustelle. Garantie nach SIA-Norm 118 mit fünf Jahren Verjährungsfrist für verdeckte Mängel.',
+    time: 'Termin- und Qualitätsgarantie schriftlich',
+  },
+];
+---
+<AnimatedSection class="section-pad bg-primary-dark text-white">
+  <div class="container-wide">
+    <div class="max-w-3xl">
+      <span class="text-xs font-semibold uppercase tracking-wider text-accent">So läuft es ab</span>
+      <h2 class="mt-2 font-display text-3xl font-semibold text-white md:text-4xl">
+        Drei Schritte vom ersten Anruf bis zum fertigen Dach.
+      </h2>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-8">
+      {steps.map((s, i) => (
+        <div class="relative flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-7 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/[0.06]">
+          <span class="font-display text-5xl font-semibold leading-none text-accent">{s.number}</span>
+          <h3 class="font-display text-xl font-semibold text-white">{s.title}</h3>
+          <p class="text-base leading-relaxed text-white/75">{s.desc}</p>
+          <p class="mt-auto inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {s.time}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</AnimatedSection>

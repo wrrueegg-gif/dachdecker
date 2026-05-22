@@ -1,0 +1,137 @@
+---
+interface Props {
+  before: string;
+  after: string;
+  beforeAlt?: string;
+  afterAlt?: string;
+  initial?: number;
+  class?: string;
+}
+const {
+  before,
+  after,
+  beforeAlt = 'Vorher',
+  afterAlt = 'Nachher',
+  initial = 50,
+  class: className = '',
+} = Astro.props;
+---
+<div
+  class={`relative aspect-[4/3] w-full overflow-hidden rounded-xl select-none touch-none bg-bone ${className}`}
+  data-ba-slider
+  data-initial={initial}
+>
+  <img
+    src={after}
+    alt={afterAlt}
+    width="800"
+    height="600"
+    loading="lazy"
+    decoding="async"
+    class="absolute inset-0 h-full w-full object-cover"
+    draggable="false"
+  />
+  <div
+    class="absolute inset-0 overflow-hidden"
+    data-ba-before-wrap
+    style={`width:${initial}%`}
+  >
+    <img
+      src={before}
+      alt={beforeAlt}
+      width="800"
+      height="600"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 h-full object-cover"
+      style="width: calc(100vw); max-width: 800px;"
+      draggable="false"
+    />
+  </div>
+
+  <div
+    class="absolute top-0 bottom-0 w-0.5 bg-white shadow-lift"
+    data-ba-divider
+    style={`left:${initial}%`}
+  >
+    <button
+      type="button"
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white shadow-lift flex items-center justify-center cursor-ew-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      aria-label="Schieber bewegen"
+      data-ba-handle
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B2A35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6" />
+        <polyline points="9 18 15 12 9 6" transform="translate(0, 0)" />
+      </svg>
+    </button>
+  </div>
+
+  <span class="absolute left-3 top-3 rounded-full bg-primary-dark/85 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-white" data-ba-label-before>Vorher</span>
+  <span class="absolute right-3 top-3 rounded-full bg-accent px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-white" data-ba-label-after>Nachher</span>
+</div>
+
+<script>
+  const setup = () => {
+    document.querySelectorAll<HTMLElement>('[data-ba-slider]').forEach((slider) => {
+      if (slider.dataset.baInit === '1') return;
+      slider.dataset.baInit = '1';
+
+      const beforeWrap = slider.querySelector<HTMLElement>('[data-ba-before-wrap]');
+      const divider = slider.querySelector<HTMLElement>('[data-ba-divider]');
+      if (!beforeWrap || !divider) return;
+
+      let active = false;
+
+      const setPos = (clientX: number) => {
+        const rect = slider.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        beforeWrap.style.width = `${pct}%`;
+        divider.style.left = `${pct}%`;
+      };
+
+      const onDown = (e: PointerEvent) => {
+        active = true;
+        slider.setPointerCapture?.(e.pointerId);
+        setPos(e.clientX);
+      };
+      const onMove = (e: PointerEvent) => {
+        if (!active) return;
+        setPos(e.clientX);
+      };
+      const onUp = (e: PointerEvent) => {
+        active = false;
+        try { slider.releasePointerCapture?.(e.pointerId); } catch {}
+      };
+
+      slider.addEventListener('pointerdown', onDown);
+      slider.addEventListener('pointermove', onMove);
+      slider.addEventListener('pointerup', onUp);
+      slider.addEventListener('pointerleave', onUp);
+      slider.addEventListener('pointercancel', onUp);
+
+      const handle = slider.querySelector<HTMLButtonElement>('[data-ba-handle]');
+      handle?.addEventListener('keydown', (e: KeyboardEvent) => {
+        const rect = slider.getBoundingClientRect();
+        const currentLeft = parseFloat(divider.style.left || '50');
+        const step = 4;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const next = Math.max(0, currentLeft - step);
+          beforeWrap.style.width = `${next}%`;
+          divider.style.left = `${next}%`;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = Math.min(100, currentLeft + step);
+          beforeWrap.style.width = `${next}%`;
+          divider.style.left = `${next}%`;
+        }
+        void rect;
+      });
+    });
+  };
+  if (document.readyState === 'complete') setup();
+  else window.addEventListener('load', setup);
+  document.addEventListener('astro:page-load', setup);
+</script>

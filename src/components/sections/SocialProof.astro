@@ -1,0 +1,26 @@
+---
+import { reviews } from '~/data/reviews';
+import ReviewCard from '~/components/ui/ReviewCard.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+---
+<AnimatedSection class="section-pad bg-white">
+  <div class="container-wide">
+    <div class="flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-between">
+      <div class="max-w-2xl">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Was Kunden sagen</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">
+          Drei Generationen — und Kundinnen, die wiederkommen.
+        </h2>
+      </div>
+      <a href="/referenzen" class="text-sm font-medium text-primary-dark underline-offset-4 hover:text-accent hover:underline">
+        Alle Referenzen ansehen →
+      </a>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
+      {reviews.map((r) => (
+        <ReviewCard name={r.name} city={r.city} text={r.text} avatar={r.avatar} />
+      ))}
+    </div>
+  </div>
+</AnimatedSection>

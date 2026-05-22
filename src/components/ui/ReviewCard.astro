@@ -1,0 +1,23 @@
+---
+import RatingStars from './RatingStars.astro';
+interface Props {
+  name: string;
+  city: string;
+  text: string;
+  avatar: string;
+}
+const { name, city, text, avatar } = Astro.props;
+---
+<article class="flex flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-soft transition-all duration-200 hover:-translate-y-1 hover:shadow-lift md:p-7">
+  <div class="flex items-center gap-3">
+    <div class="h-12 w-12 overflow-hidden rounded-full bg-bone">
+      <img src={avatar} alt="" width="48" height="48" loading="lazy" decoding="async" class="h-full w-full object-cover" />
+    </div>
+    <div class="flex flex-col">
+      <span class="text-sm font-semibold text-primary-dark">{name}</span>
+      <span class="text-xs text-muted">{city}</span>
+    </div>
+  </div>
+  <RatingStars value={5} />
+  <p class="text-base leading-relaxed text-ink">«{text}»</p>
+</article>

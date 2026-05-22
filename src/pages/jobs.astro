@@ -1,0 +1,82 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import ServiceHero from '~/components/sections/ServiceHero.astro';
+import TrustStrip from '~/components/sections/TrustStrip.astro';
+import FinalCTA from '~/components/sections/FinalCTA.astro';
+import AnimatedSection from '~/components/ui/AnimatedSection.astro';
+
+const openings = [
+  { title: 'Dachdecker EFZ', type: 'Festanstellung', location: 'Glattpark Opfikon', slug: 'dachdecker-efz' },
+  { title: 'Spengler EFZ', type: 'Festanstellung', location: 'Glattpark Opfikon', slug: 'spengler-efz' },
+  { title: 'Bauführer Bedachung', type: 'Festanstellung', location: 'Glattpark Opfikon', slug: 'baufuehrer-bedachung' },
+  { title: 'Lernende Dachdecker EFZ 2026', type: 'Lehrstelle', location: 'Glattpark Opfikon', slug: 'lehre-dachdecker' },
+  { title: 'Lernende Spengler EFZ 2026', type: 'Lehrstelle', location: 'Glattpark Opfikon', slug: 'lehre-spengler' },
+];
+
+const benefits = [
+  { t: 'Eigene Equipe', d: 'Sie arbeiten in einem festen Team mit klaren Bezugspersonen — nicht in wechselnden Subunternehmer-Konstellationen.' },
+  { t: 'Top-Material', d: 'Wir geizen nicht beim Werkzeug. Akkugeräte, Sicherheitsausrüstung, persönliche Schutzausrüstung — auf aktuellem Stand.' },
+  { t: 'Weiterbildung', d: 'Wer den Meister machen will, bekommt von uns die Zeit und einen Beitrag an die Kosten. Wer Spezialgebiet vertiefen will, auch.' },
+  { t: 'Lehre & Karriere', d: 'Konzernweit rund 900 Lernende. Bei uns vom Lehrling zum Bauführer ist ein bekannter Pfad.' },
+];
+---
+<Layout
+  title="Jobs & Karriere — SADA AG Bedachung Zürich"
+  description="Offene Stellen bei SADA AG Glattpark Opfikon. Dachdecker, Spengler, Bauführer und Lehrstellen 2026."
+>
+  <ServiceHero
+    eyebrow="Jobs & Karriere"
+    headline="Werden Sie Teil von 160 Profis bei SADA."
+    sub="Eigene Equipe, Top-Material, klare Karrierepfade vom Lernenden bis zum Bauführer. Bei uns in Glattpark, im ganzen Kanton Zürich im Einsatz."
+    bullets={['Festanstellung oder Lehre', 'Weiterbildung gefördert', 'Eigene Equipe statt Subunternehmer']}
+  />
+  <TrustStrip />
+
+  <AnimatedSection class="section-pad bg-white">
+    <div class="container-wide">
+      <div class="max-w-3xl">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Offene Stellen</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">Hier suchen wir Verstärkung.</h2>
+      </div>
+      <div class="mt-10 flex flex-col gap-3">
+        {openings.map((j) => (
+          <a
+            href={`/jobs/${j.slug}`}
+            class="group flex flex-col gap-2 rounded-2xl border border-border bg-bone p-5 transition-all hover:-translate-y-px hover:border-accent/30 hover:shadow-soft md:flex-row md:items-center md:justify-between"
+          >
+            <div>
+              <h3 class="font-display text-lg font-semibold text-primary-dark group-hover:text-accent">{j.title}</h3>
+              <p class="text-sm text-muted">{j.type} · {j.location}</p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-dark group-hover:text-accent">
+              Stelle ansehen
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-1" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </AnimatedSection>
+
+  <AnimatedSection class="section-pad bg-bone">
+    <div class="container-wide">
+      <div class="max-w-3xl">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">Was Sie bei uns erwartet</span>
+        <h2 class="mt-2 font-display text-3xl font-semibold text-primary-dark md:text-4xl">Vier Gründe, bei SADA zu arbeiten.</h2>
+      </div>
+      <div class="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+        {benefits.map((b) => (
+          <div class="rounded-2xl border border-border bg-white p-6 shadow-soft">
+            <h3 class="font-display text-lg font-semibold text-primary-dark">{b.t}</h3>
+            <p class="mt-2 text-base leading-relaxed text-muted">{b.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </AnimatedSection>
+
+  <FinalCTA />
+</Layout>
