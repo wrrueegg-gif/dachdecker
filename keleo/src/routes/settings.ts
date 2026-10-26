@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { updateSettings, type SettingsColumn } from '../db';
+import { config } from '../config';
 import type { AppEnv } from '../env';
 import { today } from '../lib/dates';
 import { isMailConfigured } from '../lib/email';
@@ -13,7 +14,7 @@ import { flash, pdfResponse, render } from './shared';
 export const settingsRoutes = new Hono<AppEnv>();
 
 settingsRoutes.get('/', (c) =>
-  render(c, 'Einstellungen', 'settings', SettingsPage({ s: c.get('settings'), mailConfigured: isMailConfigured(c.env), mailFrom: c.env.MAIL_FROM ?? '' }), {
+  render(c, 'Einstellungen', 'settings', SettingsPage({ s: c.get('settings'), mailConfigured: isMailConfigured(), mailFrom: config.mailFrom ?? '' }), {
     subtitle: 'Firma, Bankverbindung, MwSt, Nummern und Texte',
   }),
 );
@@ -54,7 +55,7 @@ settingsRoutes.post('/', async (c) => {
     email_text_quote: str(b, 'email_text_quote'),
     email_text_reminder: str(b, 'email_text_reminder'),
   };
-  await updateSettings(c.env.DB, data);
+  await updateSettings(c.get('db'), data);
   flash(c, 'success', 'Einstellungen gespeichert.');
   return c.redirect('/einstellungen');
 });

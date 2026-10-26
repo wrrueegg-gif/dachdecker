@@ -1,16 +1,5 @@
 import type { Settings } from './db';
-
-export interface Env {
-  DB: D1Database;
-  ASSETS: Fetcher;
-  APP_NAME: string;
-  SESSION_DAYS: string;
-  /** Secrets (wrangler secret put ...) */
-  APP_PASSWORD?: string;
-  SESSION_SECRET?: string;
-  RESEND_API_KEY?: string;
-  MAIL_FROM?: string;
-}
+import type { Sql } from './db/sql';
 
 export interface Flash {
   type: 'success' | 'error' | 'info';
@@ -18,8 +7,9 @@ export interface Flash {
 }
 
 export type AppEnv = {
-  Bindings: Env;
+  Bindings: Record<string, never>;
   Variables: {
+    db: Sql;
     settings: Settings;
     flash: Flash | null;
   };

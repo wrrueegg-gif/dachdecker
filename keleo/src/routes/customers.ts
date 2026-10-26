@@ -36,7 +36,7 @@ function parseCustomer(b: Body): { input: CustomerInput; errors: string[] } {
 customers.get('/', async (c) => {
   const q = c.req.query('q') ?? '';
   const archived = c.req.query('archiv') === '1';
-  const rows = await listCustomers(c.env.DB, q, archived);
+  const rows = await listCustomers(c.get('db'), q, archived);
   return render(c, 'Kunden', 'customers', CustomerList({ customers: rows, q, archived }), {
     subtitle: `${rows.length} Kunde${rows.length === 1 ? '' : 'n'}`,
     actions: [{ href: '/kunden/neu', label: 'Neuer Kunde', cls: 'btn-primary' }],
@@ -52,16 +52,16 @@ customers.post('/', async (c) => {
     flash(c, 'error', errors.join(' '));
     return render(c, 'Neuer Kunde', 'customers', CustomerForm({ action: '/kunden', customer: input }));
   }
-  const id = await createCustomer(c.env.DB, input);
+  const id = await createCustomer(c.get('db'), input);
   flash(c, 'success', `Kunde «${customerName(input)}» wurde angelegt.`);
   return c.redirect(`/kunden/${id}`);
 });
 
 customers.get('/:id', async (c) => {
   const id = idParam(c);
-  const customer = id ? await getCustomer(c.env.DB, id) : null;
+  const customer = id ? await getCustomer(c.get('db'), id) : null;
   if (!customer) return c.notFound();
-  const db = c.env.DB;
+  const db = c.get('db');
   const [quotes, invoices, notes, tasks] = await Promise.all([
     listDocuments(db, 'quote', { customerId: customer.id }),
     listDocuments(db, 'invoice', { customerId: customer.id }),
@@ -80,14 +80,14 @@ customers.get('/:id', async (c) => {
 
 customers.get('/:id/bearbeiten', async (c) => {
   const id = idParam(c);
-  const customer = id ? await getCustomer(c.env.DB, id) : null;
+  const customer = id ? await getCustomer(c.get('db'), id) : null;
   if (!customer) return c.notFound();
   return render(c, `${customerName(customer)} bearbeiten`, 'customers', CustomerForm({ customer, action: `/kunden/${customer.id}` }));
 });
 
 customers.post('/:id', async (c) => {
   const id = idParam(c);
-  const customer = id ? await getCustomer(c.env.DB, id) : null;
+  const customer = id ? await getCustomer(c.get('db'), id) : null;
   if (!customer) return c.notFound();
   const body = (await c.req.parseBody({ all: true })) as Body;
   const { input, errors } = parseCustomer(body);
@@ -95,16 +95,16 @@ customers.post('/:id', async (c) => {
     flash(c, 'error', errors.join(' '));
     return render(c, `${customerName(customer)} bearbeiten`, 'customers', CustomerForm({ customer: { ...customer, ...input }, action: `/kunden/${customer.id}` }));
   }
-  await updateCustomer(c.env.DB, customer.id, input);
+  await updateCustomer(c.get('db'), customer.id, input);
   flash(c, 'success', 'Kunde gespeichert.');
   return c.redirect(`/kunden/${customer.id}`);
 });
 
 customers.post('/:id/loeschen', async (c) => {
   const id = idParam(c);
-  const customer = id ? await getCustomer(c.env.DB, id) : null;
+  const customer = id ? await getCustomer(c.get('db'), id) : null;
   if (!customer) return c.notFound();
-  const result = await deleteOrArchiveCustomer(c.env.DB, customer.id);
+  const result = await deleteOrArchiveCustomer(c.get('db'), customer.id);
   if (result === 'deleted') {
     flash(c, 'success', `Kunde «${customerName(customer)}» wurde gelöscht.`);
     return c.redirect('/kunden');
@@ -116,20 +116,20 @@ customers.post('/:id/loeschen', async (c) => {
 customers.post('/:id/reaktivieren', async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
-  await setCustomerArchived(c.env.DB, id, false);
+  await setCustomerArchived(c.get('db'), id, false);
   flash(c, 'success', 'Kunde wurde reaktiviert.');
   return c.redirect(`/kunden/${id}`);
 });
 
 customers.post('/:id/notizen', async (c) => {
   const id = idParam(c);
-  const customer = id ? await getCustomer(c.env.DB, id) : null;
+  const customer = id ? await getCustomer(c.get('db'), id) : null;
   if (!customer) return c.notFound();
   const body = (await c.req.parseBody()) as Body;
   const text = str(body, 'body');
   if (text === '') flash(c, 'error', 'Die Notiz war leer.');
   else {
-    await addNote(c.env.DB, customer.id, text);
+    await addNote(c.get('db'), customer.id, text);
     flash(c, 'success', 'Notiz gespeichert.');
   }
   return c.redirect(`/kunden/${customer.id}`);

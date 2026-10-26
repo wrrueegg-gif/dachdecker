@@ -3,6 +3,7 @@ import {
   addPayment, convertQuoteToInvoice, copyDocument, createDocument, deleteDocument, getDocument, listCustomers, listDocuments,
   setDocumentStatus, setReference, setReminder, updateDocument, type DocumentFull, type DocumentInput, type Settings,
 } from '../db';
+import type { Sql } from '../db/sql';
 import type { AppEnv } from '../env';
 import { addDays, formatDate, isValidDate, today } from '../lib/dates';
 import { fillTemplate, isMailConfigured, sendMail } from '../lib/email';
@@ -45,7 +46,7 @@ function mailDefaults(doc: DocumentFull, s: Settings) {
 }
 
 /** Stellt sicher, dass eine Rechnung eine zur IBAN passende Referenz hat. */
-async function ensureReference(db: D1Database, doc: DocumentFull, s: Settings): Promise<void> {
+async function ensureReference(db: Sql, doc: DocumentFull, s: Settings): Promise<void> {
   if (doc.kind !== 'invoice' || !s.iban) return;
   const wanted = referenceFor(s, doc);
   if (doc.reference !== wanted && (doc.reference === '' || doc.status === 'draft')) {
@@ -108,21 +109,21 @@ export function documentRoutes(kind: DocumentKind) {
 
   const loadDoc = async (c: Context<AppEnv>): Promise<DocumentFull | null> => {
     const id = idParam(c);
-    const doc = id ? await getDocument(c.env.DB, id) : null;
+    const doc = id ? await getDocument(c.get('db'), id) : null;
     return doc && doc.kind === kind ? doc : null;
   };
 
   r.get('/', async (c) => {
     const status = c.req.query('status') ?? 'all';
     const q = c.req.query('q') ?? '';
-    const docs = await listDocuments(c.env.DB, kind, { status, q });
+    const docs = await listDocuments(c.get('db'), kind, { status, q, today: today() });
     return render(c, meta.plural, meta.navKey, DocumentList({ kind, docs, status, q, today: today() }), {
       actions: [{ href: `${meta.path}/neu`, label: `Neue ${meta.singular}`, cls: 'btn-primary' }],
     });
   });
 
   r.get('/neu', async (c) => {
-    const customers = await listCustomers(c.env.DB);
+    const customers = await listCustomers(c.get('db'));
     const pre = parseInt(c.req.query('kunde') ?? '', 10);
     return render(c, `Neue ${meta.singular}`, meta.navKey, DocumentForm({ kind, items: [], customers, settings: c.get('settings'), action: meta.path, today: today(), preselectedCustomer: Number.isFinite(pre) ? pre : undefined }));
   });
@@ -133,10 +134,10 @@ export function documentRoutes(kind: DocumentKind) {
     const { input, errors } = parseInput(b, s);
     if (errors.length) {
       flash(c, 'error', errors.join(' '));
-      const customers = await listCustomers(c.env.DB);
+      const customers = await listCustomers(c.get('db'));
       return render(c, `Neue ${meta.singular}`, meta.navKey, DocumentForm({ kind, items: input.items, customers, settings: s, action: meta.path, today: today(), preselectedCustomer: input.customer_id || undefined }));
     }
-    const id = await createDocument(c.env.DB, kind, input, kind === 'invoice' ? s.invoice_prefix : s.quote_prefix);
+    const id = await createDocument(c.get('db'), kind, input, kind === 'invoice' ? s.invoice_prefix : s.quote_prefix);
     flash(c, 'success', `${meta.singular} wurde als Entwurf gespeichert.`);
     return c.redirect(`${meta.path}/${id}`);
   });
@@ -145,9 +146,9 @@ export function documentRoutes(kind: DocumentKind) {
     const doc = await loadDoc(c);
     if (!doc) return c.notFound();
     const s = c.get('settings');
-    await ensureReference(c.env.DB, doc, s);
+    await ensureReference(c.get('db'), doc, s);
     const qrErrors = qrErrorsFor(doc, s);
-    return render(c, `${meta.singular} ${doc.number}`, meta.navKey, DocumentDetail({ doc, settings: s, today: today(), qrErrors, mailConfigured: isMailConfigured(c.env), mailDefaults: mailDefaults(doc, s), referenceType: referenceTypeOf(doc.reference) }), {
+    return render(c, `${meta.singular} ${doc.number}`, meta.navKey, DocumentDetail({ doc, settings: s, today: today(), qrErrors, mailConfigured: isMailConfigured(), mailDefaults: mailDefaults(doc, s), referenceType: referenceTypeOf(doc.reference) }), {
       subtitle: `${doc.customer_name}${doc.title ? ' · ' + doc.title : ''}`,
     });
   });
@@ -159,7 +160,7 @@ export function documentRoutes(kind: DocumentKind) {
       flash(c, 'info', 'Nur Entwürfe können bearbeitet werden. Mit «Zurück zu Entwurf» lässt sich das Dokument wieder öffnen.');
       return c.redirect(`${meta.path}/${doc.id}`);
     }
-    const customers = await listCustomers(c.env.DB, '', true);
+    const customers = await listCustomers(c.get('db'), '', true);
     return render(c, `${meta.singular} ${doc.number} bearbeiten`, meta.navKey, DocumentForm({ kind, doc, items: doc.items, customers, settings: c.get('settings'), action: `${meta.path}/${doc.id}`, today: today() }));
   });
 
@@ -175,10 +176,10 @@ export function documentRoutes(kind: DocumentKind) {
     const { input, errors } = parseInput(b, s);
     if (errors.length) {
       flash(c, 'error', errors.join(' '));
-      const customers = await listCustomers(c.env.DB, '', true);
+      const customers = await listCustomers(c.get('db'), '', true);
       return render(c, `${meta.singular} ${doc.number} bearbeiten`, meta.navKey, DocumentForm({ kind, doc, items: input.items, customers, settings: s, action: `${meta.path}/${doc.id}`, today: today() }));
     }
-    await updateDocument(c.env.DB, doc.id, input);
+    await updateDocument(c.get('db'), doc.id, input);
     flash(c, 'success', 'Gespeichert.');
     return c.redirect(`${meta.path}/${doc.id}`);
   });
@@ -194,7 +195,7 @@ export function documentRoutes(kind: DocumentKind) {
       flash(c, 'error', 'Rechnungen mit erfassten Zahlungen können nicht zurück in den Entwurf.');
       return c.redirect(`${meta.path}/${doc.id}`);
     }
-    await setDocumentStatus(c.env.DB, doc.id, status);
+    await setDocumentStatus(c.get('db'), doc.id, status);
     flash(c, 'success', 'Status aktualisiert.');
     return c.redirect(`${meta.path}/${doc.id}`);
   });
@@ -202,7 +203,7 @@ export function documentRoutes(kind: DocumentKind) {
   r.post('/:id/loeschen', async (c) => {
     const doc = await loadDoc(c);
     if (!doc) return c.notFound();
-    await deleteDocument(c.env.DB, doc.id);
+    await deleteDocument(c.get('db'), doc.id);
     flash(c, 'success', `${meta.singular} ${doc.number} wurde gelöscht.`);
     return c.redirect(meta.path);
   });
@@ -213,7 +214,7 @@ export function documentRoutes(kind: DocumentKind) {
     const s = c.get('settings');
     const t = today();
     const dueDays = kind === 'invoice' ? s.payment_terms_days : s.quote_valid_days;
-    const id = await copyDocument(c.env.DB, doc, kind === 'invoice' ? s.invoice_prefix : s.quote_prefix, t, addDays(t, dueDays));
+    const id = await copyDocument(c.get('db'), doc, kind === 'invoice' ? s.invoice_prefix : s.quote_prefix, t, addDays(t, dueDays));
     flash(c, 'success', `Kopie von ${doc.number} als neuer Entwurf erstellt.`);
     return c.redirect(`${meta.path}/${id}/bearbeiten`);
   });
@@ -222,7 +223,7 @@ export function documentRoutes(kind: DocumentKind) {
     const doc = await loadDoc(c);
     if (!doc) return c.notFound();
     const s = c.get('settings');
-    await ensureReference(c.env.DB, doc, s);
+    await ensureReference(c.get('db'), doc, s);
     const reminder = kind === 'invoice' && c.req.query('mahnung') === '1' && doc.reminder_level > 0 ? doc.reminder_level : 0;
     const qrOk = kind === 'invoice' && qrErrorsFor(doc, s).length === 0;
     const bytes = await renderDocumentPdf(doc, s, {
@@ -245,7 +246,7 @@ export function documentRoutes(kind: DocumentKind) {
       flash(c, 'error', 'Bitte eine gültige Empfängeradresse angeben.');
       return c.redirect(`${meta.path}/${doc.id}`);
     }
-    await ensureReference(c.env.DB, doc, s);
+    await ensureReference(c.get('db'), doc, s);
     const variant = str(b, 'variant') === 'reminder' && doc.reminder_level > 0 ? doc.reminder_level : 0;
     const bytes = await renderDocumentPdf(doc, s, {
       todayIso: today(),
@@ -254,12 +255,12 @@ export function documentRoutes(kind: DocumentKind) {
       includeQrBill: kind === 'invoice' && qrErrorsFor(doc, s).length === 0,
     });
     const filename = variant > 0 ? `${doc.number}-${REMINDER_LABELS[variant].replace(/[.\s]/g, '')}.pdf` : `${doc.number}.pdf`;
-    const result = await sendMail(c.env, { to, subject: str(b, 'subject') || `${meta.singular} ${doc.number}`, text: str(b, 'text'), replyTo: s.email || undefined, attachments: [{ filename, content: bytes }] });
+    const result = await sendMail({ to, subject: str(b, 'subject') || `${meta.singular} ${doc.number}`, text: str(b, 'text'), replyTo: s.email || undefined, attachments: [{ filename, content: bytes }] });
     if (!result.ok) {
       flash(c, 'error', `Versand fehlgeschlagen: ${result.error}`);
       return c.redirect(`${meta.path}/${doc.id}`);
     }
-    if (doc.status === 'draft') await setDocumentStatus(c.env.DB, doc.id, 'sent');
+    if (doc.status === 'draft') await setDocumentStatus(c.get('db'), doc.id, 'sent');
     flash(c, 'success', `${variant > 0 ? REMINDER_LABELS[variant] : meta.singular} wurde an ${to} gesendet.`);
     return c.redirect(`${meta.path}/${doc.id}`);
   });
@@ -276,7 +277,7 @@ export function documentRoutes(kind: DocumentKind) {
         return c.redirect(`${meta.path}/${doc.id}`);
       }
       const method = ['bank', 'cash', 'twint', 'other'].includes(str(b, 'method')) ? str(b, 'method') : 'bank';
-      await addPayment(c.env.DB, doc.id, { date, amount, method, note: str(b, 'note') });
+      await addPayment(c.get('db'), doc.id, { date, amount, method, note: str(b, 'note') });
       flash(c, 'success', `Zahlung über ${doc.currency} ${formatAmount(amount)} erfasst.`);
       return c.redirect(`${meta.path}/${doc.id}`);
     });
@@ -289,7 +290,7 @@ export function documentRoutes(kind: DocumentKind) {
         return c.redirect(`${meta.path}/${doc.id}`);
       }
       const level = doc.reminder_level + 1;
-      await setReminder(c.env.DB, doc.id, level, today());
+      await setReminder(c.get('db'), doc.id, level, today());
       flash(c, 'success', `${REMINDER_LABELS[level]} erstellt – PDF prüfen und per E-Mail oder Post versenden.`);
       return c.redirect(`${meta.path}/${doc.id}`);
     });
@@ -305,7 +306,7 @@ export function documentRoutes(kind: DocumentKind) {
       }
       const s = c.get('settings');
       const t = today();
-      const id = await convertQuoteToInvoice(c.env.DB, doc, s.invoice_prefix, t, addDays(t, s.payment_terms_days), s.invoice_intro, s.invoice_footer);
+      const id = await convertQuoteToInvoice(c.get('db'), doc, s.invoice_prefix, t, addDays(t, s.payment_terms_days), s.invoice_intro, s.invoice_footer);
       flash(c, 'success', `Rechnung aus Offerte ${doc.number} erstellt – bitte prüfen und senden.`);
       return c.redirect(`/rechnungen/${id}`);
     });

@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { html } from 'hono/html';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { Child } from 'hono/jsx';
+import { config } from '../config';
 import type { AppEnv, Flash } from '../env';
 import { Layout } from '../views/layout';
 
@@ -44,7 +45,7 @@ export function render(c: Context<AppEnv>, title: string, active: string, body: 
       Layout({
         title,
         active,
-        appName: c.env.APP_NAME || 'Keleo',
+        appName: config.appName,
         companyName: settings?.company_name,
         flash: c.get('flash'),
         actions,

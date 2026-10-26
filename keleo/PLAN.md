@@ -1,6 +1,6 @@
 # Keleo – Plan
 
-Stand: 25. Oktober 2026. Keleo ist ein kleines, selbst gehostetes Rechnungs- und Offertenprogramm für die Schweiz, angelehnt an den Aufbau von koleo.ch, betrieben auf Cloudflare mit der Datenbank D1. Dieses Dokument beschreibt Ziel, Recherche, Architektur, Datenmodell, den umgesetzten Funktionsumfang (Phase 1), die nächsten Schritte und die offenen Entscheidungen.
+Stand: 26. Oktober 2026. Keleo ist ein kleines, selbst gehostetes Rechnungs- und Offertenprogramm für die Schweiz, angelehnt an den Aufbau von koleo.ch, betrieben auf Vercel mit einer Postgres-Datenbank bei Supabase. (Die erste Fassung lief auf Cloudflare Workers + D1; der Wechsel auf Vercel erfolgte am 26. Oktober auf Wunsch, weil Vercel und Supabase direkt aus der Claude-Umgebung eingerichtet werden können.) Dieses Dokument beschreibt Ziel, Recherche, Architektur, Datenmodell, den umgesetzten Funktionsumfang (Phase 1), die nächsten Schritte und die offenen Entscheidungen.
 
 ## 1. Ziel in einem Satz
 
@@ -22,7 +22,7 @@ Koleo (koleo.ch, ab 2024 mit 7-Tage-Test und anschliessendem Abo) ist eine Onlin
 | QR-Rechnung automatisch, Bankdaten aus den Einstellungen | Gleich, inkl. QR-IBAN-Erkennung und Test-Zahlteil |
 | Einstellungen: Firma, Logo, Kontonummer, Fristen, E-Mail, MwSt | Gleich bis auf Logo (Phase 2) |
 | Produkte/Artikelstamm, Gutschriften | Phase 2 |
-| Konto & Abonnement | Entfällt – Keleo läuft auf dem eigenen Cloudflare-Konto |
+| Konto & Abonnement | Entfällt – Keleo läuft auf dem eigenen Vercel- und Supabase-Konto |
 
 Zusätzlich zu Koleo hat Keleo:
 
@@ -33,44 +33,35 @@ Zusätzlich zu Koleo hat Keleo:
 ## 3. Architektur
 
 ```
-Browser ──HTTPS──▶ Cloudflare Worker (Hono, TypeScript)
+Browser ──HTTPS──▶ Vercel Function (Hono, TypeScript, Node 22, Region Frankfurt)
                      ├── HTML-Seiten (serverseitig gerendertes JSX, wenig JavaScript)
                      ├── PDF-Erzeugung (pdf-lib + qrcode, reines JavaScript)
                      ├── E-Mail (Resend-API, optional)
-                     └── D1-Datenbank (SQLite, serverlos)
-                   Static Assets: app.css, app.js, favicon.svg (direkt vom Edge)
+                     └── Postgres bei Supabase (Schema «keleo», über den Transaction-Pooler)
+                   Statische Dateien: public/ (app.css, app.js, favicon.svg) direkt vom Vercel-CDN
+Lokal: derselbe Code mit Node und PGlite (Postgres als WebAssembly, Daten im Ordner .data/)
 ```
 
 Entscheide und Gründe:
 
-- **Cloudflare Workers statt klassischem Server**: kein Server zu warten, automatisch HTTPS, weltweit schnell, im Workers-Free-Plan für diese Nutzung kostenlos (100'000 Requests/Tag).
-- **D1 als Datenbank**: Das ist die Datenbank, die du gelesen hast. D1 ist Cloudflares serverlose SQL-Datenbank auf SQLite-Basis, direkt aus dem Worker ansprechbar, mit Migrationen, Backups (Time Travel) und einem kostenlosen Kontingent, das für eine Einzelfirma bei weitem reicht (Zahlen in Abschnitt 4).
-- **Hono mit serverseitigem JSX**: kleines, Workers-natives Framework. Seiten werden auf dem Server als HTML gerendert, Formulare werden klassisch abgeschickt. Das hält den Code einfach, braucht keinen Frontend-Build und funktioniert auch auf dem Handy. Nur der Positionen-Editor hat etwas JavaScript (Zeilen hinzufügen, Live-Summen).
-- **PDF im Worker mit pdf-lib**: Die bekannte Bibliothek `swissqrbill` baut auf PDFKit auf und läuft nicht ohne Weiteres in Workers. Darum zeichnet Keleo den Zahlteil selbst nach den SIX-Massvorgaben (Empfangsschein 62 mm, Zahlteil 148 mm, Swiss QR Code 46 × 46 mm mit Schweizer Kreuz) und nutzt die Standardschrift Helvetica. Das läuft ohne Browser-Rendering und ohne externe Dienste.
-- **Einzelbenutzer-Login** mit Passwort aus einem Secret und signiertem Cookie. Bei Bedarf kann Cloudflare Access (kostenlos bis 50 Benutzer) als zweite Schicht vorgeschaltet werden.
+- **Vercel statt eigenem Server**: nichts zu warten, automatisch HTTPS, Hobby-Plan kostenlos und für eine Einzelfirma mehr als ausreichend (1 Mio. Funktionsaufrufe, 100 GB Transfer pro Monat). Vercel erkennt Hono automatisch, es braucht keinen Build-Schritt.
+- **Postgres bei Supabase**: Vercel hat keine eigene Datenbank mehr; Supabase bietet im Free-Plan 500 MB Postgres, was für viele tausend Rechnungen reicht. Die Tabellen liegen im eigenen Schema `keleo` und werden über eine eigene Datenbankrolle angesprochen, damit sie nicht über die öffentliche Supabase-Daten-API erreichbar sind.
+- **PGlite für lokal und Tests**: echtes Postgres im Prozess, kein Docker, keine Installation. Die Datenbanktests laufen dagegen, damit das SQL vor dem Veröffentlichen geprüft ist.
+- **Hono mit serverseitigem JSX**: kleines Framework, Seiten werden als HTML gerendert, Formulare klassisch abgeschickt; nur der Positionen-Editor hat etwas JavaScript.
+- **PDF mit pdf-lib**: Zahlteil und Empfangsschein werden selbst nach den SIX-Massvorgaben gezeichnet; keine externen Dienste.
+- **Einzelbenutzer-Login** mit Passwort aus einer Umgebungsvariable und signiertem Cookie.
 
-## 4. Cloudflare D1 – was es ist und was es kostet
+## 4. Vercel und Supabase – was es ist und was es kostet
 
-D1 ist eine verwaltete SQL-Datenbank mit SQLite-Semantik. Der Worker spricht sie über ein «Binding» (`env.DB`) direkt an, ohne Verbindungsdaten oder Passwörter. Die Tabellen werden mit SQL-Migrationsdateien angelegt (`migrations/0001_init.sql`), lokal und in der Cloud mit demselben Befehl.
+**Vercel (Hosting)**, Hobby-Plan kostenlos: 100 GB Datentransfer, 1 Mio. Funktionsaufrufe und 4 Stunden aktive Rechenzeit pro Monat, automatisches HTTPS, eigene Domain möglich. Keleo braucht davon einen Bruchteil. Der Hobby-Plan ist für nicht-kommerzielle Nutzung gedacht; für den Firmeneinsatz empfiehlt Vercel den Pro-Plan (USD 20/Monat). Das ist bei Bedarf ein Klick, der Code bleibt gleich.
 
-Grenzen und Kosten laut Cloudflare-Dokumentation (Stand Oktober 2026):
-
-| | Workers Free (kostenlos) | Workers Paid (USD 5/Monat) |
-|---|---|---|
-| Zeilen lesen | 5 Mio. pro Tag | 25 Mrd. pro Monat inklusive, danach USD 0.001 pro Mio. |
-| Zeilen schreiben | 100'000 pro Tag | 50 Mio. pro Monat inklusive, danach USD 1.00 pro Mio. |
-| Speicher | 5 GB gesamt | 5 GB inklusive, danach USD 0.75 pro GB und Monat |
-| Grösse pro Datenbank | 500 MB | 10 GB |
-| Datenbanken pro Konto | 10 | 50'000 |
-| Time Travel (Wiederherstellung auf einen Zeitpunkt) | 7 Tage | 30 Tage |
-
-Einordnung: Eine Rechnung mit fünf Positionen belegt etwa 2 KB. Selbst mit 10'000 Rechnungen und allen Kunden, Notizen und Zahlungen bleibt die Datenbank unter 50 MB – also weit unter dem Free-Limit. Die täglichen Lese-/Schreibkontingente reicht ein einzelner Benutzer in der Praxis nicht aus. Der Free-Plan ist für Keleo die Empfehlung; der Paid-Plan wird nur interessant, wenn längere Backup-Fenster (30 statt 7 Tage) gewünscht sind.
+**Supabase (Datenbank)**, Free-Plan kostenlos: 500 MB Postgres, 2 aktive Projekte, Projekte werden nach einer Woche ohne Zugriff pausiert (im Dashboard mit einem Klick wieder aktivierbar). Pro-Plan ab USD 25/Monat mit täglichen Backups und 8 GB. Für Keleo reicht der Free-Plan; eine Rechnung mit fünf Positionen belegt etwa 2 KB.
 
 Weitere Punkte:
 
-- **Backups**: D1 Time Travel erlaubt die Wiederherstellung auf jede Minute der letzten 7 Tage (Free). Zusätzlich lässt sich die Datenbank jederzeit mit `wrangler d1 export keleo --remote --output backup.sql` als SQL-Datei sichern (Phase 2: automatischer monatlicher Export).
-- **Standort**: D1 wählt den Standort beim Erstellen automatisch; mit `--location weur` kann Westeuropa erzwungen werden (`npx wrangler d1 create keleo --location weur`). Für Schweizer Kundendaten ist das empfehlenswert.
-- **Eine Datenbank, ein Worker**: Keleo braucht genau eine D1-Datenbank und einen Worker. Beides wird im kostenlosen Cloudflare-Konto angelegt.
+- **Backups**: Im Free-Plan keine automatischen Backups; Empfehlung: regelmässiger Export (Phase 2 in Keleo als CSV/SQL) oder Pro-Plan.
+- **Standort**: Supabase-Projekt in Frankfurt (eu-central-1), Vercel-Funktion in Frankfurt (fra1) – kurze Wege, Daten in der EU.
+- **Pausierung**: Wird das Supabase-Projekt pausiert, zeigt Keleo eine Fehlerseite; nach dem Reaktivieren läuft es ohne weitere Schritte weiter.
 
 ## 5. Datenmodell
 
@@ -89,18 +80,18 @@ Beträge werden konsequent als ganze Rappen gespeichert; Daten als ISO-Text. Sta
 
 ## 6. Phase 1 – umgesetzt in diesem Stand
 
-- [x] Login mit Passwort (Secret), Session-Cookie, CSRF-Schutz
+- [x] Login mit Passwort (Umgebungsvariable), Session-Cookie, CSRF-Schutz
 - [x] Einstellungen inkl. IBAN-Prüfung, QR-IBAN-Erkennung und Test-Zahlteil
 - [x] Kunden: Liste mit Suche, Anlegen/Bearbeiten, Archivieren, Bemerkungen, Notiz-Journal, Aufgaben je Kunde
 - [x] Offerten: Erstellen mit Positionen-Editor (Live-Summen), PDF mit Unterschriftszeile, Status, Kopieren, Umwandeln in Rechnung
 - [x] Rechnungen: Erstellen, PDF mit Zahlteil und Empfangsschein, Status, Zahlungen (Teilzahlung → teilbezahlt, voll → bezahlt), Stornieren, Kopieren
 - [x] Mahnwesen: Zahlungserinnerung, 1. und 2. Mahnung als eigenes PDF mit offenem Betrag und neuer Frist
 - [x] QR-Rechnung: QR-Referenz (bei QR-IBAN) oder Creditor Reference (bei normaler IBAN), strukturierte Adressen, Validierung mit klaren Fehlermeldungen
-- [x] E-Mail-Versand über Resend mit PDF-Anhang und Vorlagen mit Platzhaltern (sobald die Secrets gesetzt sind)
+- [x] E-Mail-Versand über Resend mit PDF-Anhang und Vorlagen mit Platzhaltern (sobald die Umgebungsvariablen gesetzt sind)
 - [x] Übersicht mit Kennzahlen und «Zu erledigen»-Liste
 - [x] Aufgabenliste
 - [x] Mobile-taugliches Layout
-- [x] Unit-Tests für QR-Rechnung und Summenlogik, Typprüfung, lokaler Dev-Server mit lokaler D1
+- [x] Tests für QR-Rechnung, Summenlogik und Datenbank (PGlite), Typprüfung, lokaler Dev-Server ohne Installation
 
 Geprüft wurde der komplette Ablauf lokal: Einstellungen → Kunde → Offerte → Rechnung → Teilzahlung → Mahnung → PDFs. Die erzeugten Swiss QR Codes wurden maschinell ausgelesen und entsprechen dem vorgeschriebenen Aufbau (31 Zeilen, Version 0200, Adresstyp S, gültige Prüfziffern).
 
@@ -116,42 +107,42 @@ Geprüft wurde der komplette Ablauf lokal: Einstellungen → Kunde → Offerte �
 
 | Option | Kosten | Einschätzung |
 |---|---|---|
-| **Resend** (umgesetzt) | kostenlos bis 3'000 Mails/Monat, eigene Domain nötig | Einfachste Lösung, 2 Secrets setzen, fertig |
-| Cloudflare Email Service | in Beta (seit 2026), braucht Workers Paid | Später interessant, API kann sich noch ändern |
+| **Resend** (umgesetzt) | kostenlos bis 3'000 Mails/Monat, eigene Domain nötig | Einfachste Lösung, 2 Umgebungsvariablen setzen, fertig |
 | Manuell | kostenlos | PDF herunterladen, mit dem eigenen Mailprogramm senden, Rechnung «Als gesendet markieren» |
 
 ## 9. Sicherheit und Betrieb
 
-- Passwort und Session-Secret liegen als Cloudflare-Secrets, nie im Code.
+- Passwort und Session-Secret liegen als Umgebungsvariablen bei Vercel, nie im Code.
 - Alle schreibenden Aktionen sind nur mit gültiger Session und nur von derselben Origin möglich.
-- HTTPS ist bei Cloudflare automatisch.
-- Empfehlung für den Betrieb: zusätzlich Cloudflare Access aktivieren (Anmeldung per E-Mail-Code vor der App), regelmässiger Export der Datenbank, Passwort mit mindestens 16 Zeichen.
+- HTTPS ist bei Vercel automatisch; Vorschau-Deployments sind zusätzlich durch Vercel-Login geschützt.
+- Die Datenbank ist nur über die eigene Rolle und das Schema `keleo` erreichbar, nicht über die Supabase-Daten-API.
 - Kein Tracking, keine externen Skripte; Schrift ist die Systemschrift.
+- Empfehlung: Passwort mit mindestens 16 Zeichen, regelmässiger Datenexport.
 
 ## 10. Nächste Phasen
 
 **Phase 2 – Komfort (je ½–1 Tag)**
 
 1. Artikel-/Leistungsstamm: häufige Positionen speichern und per Klick einfügen (wie Koleo «Produkte»).
-2. Logo-Upload für PDF und Briefkopf (Speicherung in Cloudflare R2 oder als kleines PNG in D1).
+2. Logo-Upload für PDF und Briefkopf (Speicherung in Vercel Blob oder als kleines PNG in der Datenbank).
 3. Gutschriften (negative Dokumente) und Stornorechnungen.
 4. Zahlungsabgleich: camt.054-Datei der Bank hochladen → Zahlungen mit QR-Referenz werden automatisch verbucht.
 5. Export: CSV-Listen (Rechnungen, Zahlungen, Kunden) für Treuhänder oder Buchhaltung.
-6. Automatischer monatlicher Datenbank-Export (Cron-Trigger des Workers).
+6. Automatischer monatlicher Datenbank-Export (Vercel Cron Job).
 7. Mahngebühren und Standard-Mahntexte in den Einstellungen.
 
 **Phase 3 – Ausbau (nach Bedarf)**
 
 - Wiederkehrende Rechnungen (Abos, Wartungsverträge).
 - Zeiterfassung mit Übernahme in Rechnungspositionen.
-- Mehrere Benutzer (Cloudflare Access + Rollen).
+- Mehrere Benutzer mit eigenen Logins und Rollen.
 - Kundenportal-Link: Kunde kann Offerte online annehmen.
 - Dunkles Farbschema.
 - Zweisprachige Dokumente (DE/FR/IT/EN) für den Zahlteil und die Texte.
 
 ## 11. Veröffentlichung
 
-Die Einrichtung auf Cloudflare übernimmt das Skript `npm run cloud:setup` (Datenbank anlegen, Migrationen, Worker veröffentlichen, Secrets setzen). Drei Wege sind im [README](./README.md) beschrieben: aus der Claude-Cloud-Umgebung (benötigt dort die Freigabe von `api.cloudflare.com` und ein API-Token als Umgebungs-Secret), automatisch über GitHub Actions (`.github/workflows/deploy-keleo.yml` mit den Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `KELEO_APP_PASSWORD`) oder am eigenen Computer nach `npx wrangler login`. Danach läuft Keleo unter `https://keleo.<konto>.workers.dev`; eine eigene Domain kann im Dashboard verbunden werden.
+Keleo ist als Vercel-Projekt `keleo` mit diesem Repository verbunden (Root-Verzeichnis `keleo`, Framework Hono, Node 22, Region Frankfurt). Die Datenbank liegt bei Supabase; die Tabellen legt Keleo beim ersten Start selbst an. Die nötigen Umgebungsvariablen und die einmalige Einrichtung der Datenbankrolle sind im [README](./README.md) beschrieben.
 
 ## 12. Offene Entscheidungen
 
@@ -165,7 +156,7 @@ Die Einrichtung auf Cloudflare übernimmt das Skript `npm run cloud:setup` (Date
 ## 13. Quellen
 
 - Koleo Hilfe: koleo.ch/help (Rechnungen erstellen, Offerten erstellen, Zahlungserinnerungen & Mahnungen, Kunden erfassen, QR-Rechnung, Konto & Abonnement)
-- Cloudflare D1 Pricing und Limits: developers.cloudflare.com/d1/platform/pricing, developers.cloudflare.com/d1/platform/limits
-- Cloudflare Workers Static Assets: developers.cloudflare.com/workers/static-assets
+- Vercel: vercel.com/docs/frameworks/backend/hono, vercel.com/docs/plans/hobby
+- Supabase: supabase.com/docs/guides/database/connecting-to-postgres (Pooler), supabase.com/pricing
 - SIX Implementation Guidelines QR-bill v2.3 und Factsheet zur Übergangsfrist (strukturierte Adressen ab 21.11.2025): six-group.com (Banking Services → QR-bill)
 - Resend: resend.com (Free-Plan 3'000 E-Mails/Monat)

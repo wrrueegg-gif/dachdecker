@@ -1,10 +1,10 @@
 /**
- * Einfache Einzelbenutzer-Anmeldung: Passwort aus dem Secret APP_PASSWORD,
+ * Einfache Einzelbenutzer-Anmeldung: Passwort aus der Umgebungsvariable APP_PASSWORD,
  * Sitzung als HMAC-signiertes Cookie (kein Server-Zustand nötig).
- * Für mehr Sicherheit kann zusätzlich Cloudflare Access vorgeschaltet werden.
  */
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { config } from './config';
 import type { AppEnv } from './env';
 
 const COOKIE = 'keleo_session';
@@ -58,13 +58,13 @@ export function clearSession(c: Context<AppEnv>): void {
   deleteCookie(c, COOKIE, { path: '/' });
 }
 
-export function isConfigured(env: AppEnv['Bindings']): boolean {
-  return !!env.APP_PASSWORD && !!env.SESSION_SECRET && env.SESSION_SECRET.length >= 16;
+export function isConfigured(): boolean {
+  return !!config.appPassword && !!config.sessionSecret && config.sessionSecret.length >= 16;
 }
 
 /** Leitet nicht angemeldete Besucher auf /login um. */
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const secret = c.env.SESSION_SECRET ?? '';
+  const secret = config.sessionSecret ?? '';
   if (secret && (await hasValidSession(c, secret))) return next();
   const next_ = new URL(c.req.url).pathname;
   return c.redirect('/login' + (next_ !== '/' ? `?next=${encodeURIComponent(next_)}` : ''));

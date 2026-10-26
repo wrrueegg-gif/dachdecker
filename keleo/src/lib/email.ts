@@ -1,10 +1,10 @@
 /**
  * E-Mail-Versand über Resend (https://resend.com). Resend hat einen kostenlosen
  * Plan (aktuell 3'000 E-Mails/Monat) und eine einfache HTTP-API, die direkt aus
- * einem Cloudflare Worker aufgerufen werden kann. Benötigt die Secrets
+ * einer Vercel-Funktion aufgerufen werden kann. Benötigt die Umgebungsvariablen
  * RESEND_API_KEY und MAIL_FROM (eine Adresse auf einer bei Resend verifizierten Domain).
  */
-import type { Env } from '../env';
+import { config } from '../config';
 
 export interface MailAttachment {
   filename: string;
@@ -21,8 +21,8 @@ export interface MailMessage {
 
 export type MailResult = { ok: true; id: string } | { ok: false; error: string };
 
-export function isMailConfigured(env: Env): boolean {
-  return !!env.RESEND_API_KEY && !!env.MAIL_FROM;
+export function isMailConfigured(): boolean {
+  return !!config.resendApiKey && !!config.mailFrom;
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -32,15 +32,15 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-export async function sendMail(env: Env, msg: MailMessage): Promise<MailResult> {
-  if (!isMailConfigured(env)) {
-    return { ok: false, error: 'E-Mail-Versand ist nicht konfiguriert (Secrets RESEND_API_KEY und MAIL_FROM fehlen). PDF herunterladen und manuell versenden.' };
+export async function sendMail(msg: MailMessage): Promise<MailResult> {
+  if (!isMailConfigured()) {
+    return { ok: false, error: 'E-Mail-Versand ist nicht konfiguriert (Umgebungsvariablen RESEND_API_KEY und MAIL_FROM fehlen). PDF herunterladen und manuell versenden.' };
   }
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: env.MAIL_FROM,
+      from: config.mailFrom,
       to: [msg.to],
       reply_to: msg.replyTo || undefined,
       subject: msg.subject,

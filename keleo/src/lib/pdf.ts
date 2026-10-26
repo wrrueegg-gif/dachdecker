@@ -1,5 +1,5 @@
 /**
- * PDF-Erzeugung mit pdf-lib (läuft ohne Node-Abhängigkeiten im Cloudflare Worker).
+ * PDF-Erzeugung mit pdf-lib (reines JavaScript, keine Browser- oder Systemabhängigkeiten).
  * Rechnungen erhalten am Seitenende den Zahlteil mit Empfangsschein nach dem
  * Schweizer QR-Rechnungs-Standard (210 × 105 mm, Swiss QR Code 46 × 46 mm).
  */

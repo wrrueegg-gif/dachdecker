@@ -1,7 +1,9 @@
 /**
- * Datenzugriff auf Cloudflare D1 (SQLite). Alle Funktionen sind bewusst
- * einfache SQL-Aufrufe ohne ORM, damit der Code leicht nachvollziehbar bleibt.
+ * Datenzugriff (Postgres). Alle Tabellen liegen im Schema `keleo`, damit sie
+ * bei Supabase nicht über die öffentliche Daten-API erreichbar sind.
+ * Bewusst einfache SQL-Aufrufe ohne ORM, damit der Code nachvollziehbar bleibt.
  */
+import type { Sql } from './db/sql';
 import type { DocumentKind } from './lib/kinds';
 import { computeTotals, type ItemInput } from './lib/totals';
 
@@ -173,25 +175,23 @@ export interface DocumentInput {
   items: ItemInput[];
 }
 
-const PAID_SQL = `(SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.document_id = d.id)`;
+const PAID_SQL = `(SELECT COALESCE(SUM(p.amount), 0)::bigint FROM keleo.payments p WHERE p.document_id = d.id)`;
 const CUSTOMER_NAME_SQL = `CASE WHEN c.company <> '' THEN c.company ELSE TRIM(c.first_name || ' ' || c.last_name) END`;
+const NOW = `keleo.utcnow()`;
 
 // ---------- Einstellungen ----------
 
-export async function getSettings(db: D1Database): Promise<Settings> {
-  const s = await db.prepare('SELECT * FROM settings WHERE id = 1').first<Settings>();
-  if (!s) throw new Error('Einstellungen fehlen – wurde die Migration ausgeführt?');
+export async function getSettings(db: Sql): Promise<Settings> {
+  const s = await db.one<Settings>('SELECT * FROM keleo.settings WHERE id = 1');
+  if (!s) throw new Error('Einstellungen fehlen – wurde die Datenbank-Migration ausgeführt?');
   return s;
 }
 
-export async function updateSettings(db: D1Database, data: Partial<Record<SettingsColumn, string | number>>): Promise<void> {
+export async function updateSettings(db: Sql, data: Partial<Record<SettingsColumn, string | number>>): Promise<void> {
   const keys = SETTINGS_COLUMNS.filter((k) => k in data);
   if (keys.length === 0) return;
-  const sets = keys.map((k) => `${k} = ?`).join(', ');
-  await db
-    .prepare(`UPDATE settings SET ${sets}, updated_at = datetime('now') WHERE id = 1`)
-    .bind(...keys.map((k) => data[k]))
-    .run();
+  const sets = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  await db.exec(`UPDATE keleo.settings SET ${sets}, updated_at = ${NOW} WHERE id = 1`, keys.map((k) => data[k]));
 }
 
 // ---------- Kunden ----------
@@ -215,80 +215,74 @@ export function customerAddressLines(c: Customer): string[] {
   return lines;
 }
 
-export async function listCustomers(db: D1Database, q = '', includeArchived = false): Promise<CustomerRow[]> {
+export async function listCustomers(db: Sql, q = '', includeArchived = false): Promise<CustomerRow[]> {
   const where: string[] = [];
   const params: unknown[] = [];
   if (!includeArchived) where.push('c.archived = 0');
   if (q !== '') {
-    where.push(`(c.company LIKE ?1 OR c.first_name LIKE ?1 OR c.last_name LIKE ?1 OR c.city LIKE ?1 OR c.number LIKE ?1 OR c.email LIKE ?1)`);
     params.push(`%${q}%`);
+    where.push(`(c.company ILIKE $1 OR c.first_name ILIKE $1 OR c.last_name ILIKE $1 OR c.city ILIKE $1 OR c.number ILIKE $1 OR c.email ILIKE $1)`);
   }
   const sql = `
     SELECT c.*,
-      (SELECT COUNT(*) FROM documents d WHERE d.customer_id = c.id) AS document_count,
-      (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0) FROM documents d WHERE d.customer_id = c.id AND d.kind = 'invoice' AND d.status = 'sent') AS open_amount
-    FROM customers c
+      (SELECT COUNT(*) FROM keleo.documents d WHERE d.customer_id = c.id) AS document_count,
+      (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0)::bigint FROM keleo.documents d WHERE d.customer_id = c.id AND d.kind = 'invoice' AND d.status = 'sent') AS open_amount
+    FROM keleo.customers c
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    ORDER BY ${CUSTOMER_NAME_SQL} COLLATE NOCASE`;
-  const r = await db.prepare(sql).bind(...params).all<CustomerRow>();
-  return r.results;
+    ORDER BY lower(${CUSTOMER_NAME_SQL})`;
+  return db.query<CustomerRow>(sql, params);
 }
 
-export async function getCustomer(db: D1Database, id: number): Promise<Customer | null> {
-  return db.prepare('SELECT * FROM customers WHERE id = ?').bind(id).first<Customer>();
+export async function getCustomer(db: Sql, id: number): Promise<Customer | null> {
+  return db.one<Customer>('SELECT * FROM keleo.customers WHERE id = $1', [id]);
 }
 
-export async function createCustomer(db: D1Database, c: CustomerInput): Promise<number> {
-  const row = await db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS n FROM customers').first<{ n: number }>();
+export async function createCustomer(db: Sql, c: CustomerInput): Promise<number> {
+  const row = await db.one<{ n: number }>('SELECT COALESCE(MAX(id), 0)::int + 1 AS n FROM keleo.customers');
   const number = 'K-' + String(row?.n ?? 1).padStart(4, '0');
-  const r = await db
-    .prepare(
-      `INSERT INTO customers (number, type, company, salutation, first_name, last_name, street, house_no, zip, city, country, email, phone, remarks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(number, c.type, c.company, c.salutation, c.first_name, c.last_name, c.street, c.house_no, c.zip, c.city, c.country, c.email, c.phone, c.remarks)
-    .run();
-  return Number(r.meta.last_row_id);
+  const inserted = await db.one<{ id: number }>(
+    `INSERT INTO keleo.customers (number, type, company, salutation, first_name, last_name, street, house_no, zip, city, country, email, phone, remarks)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
+    [number, c.type, c.company, c.salutation, c.first_name, c.last_name, c.street, c.house_no, c.zip, c.city, c.country, c.email, c.phone, c.remarks],
+  );
+  return inserted!.id;
 }
 
-export async function updateCustomer(db: D1Database, id: number, c: CustomerInput): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE customers SET type = ?, company = ?, salutation = ?, first_name = ?, last_name = ?, street = ?, house_no = ?, zip = ?, city = ?,
-       country = ?, email = ?, phone = ?, remarks = ?, updated_at = datetime('now') WHERE id = ?`,
-    )
-    .bind(c.type, c.company, c.salutation, c.first_name, c.last_name, c.street, c.house_no, c.zip, c.city, c.country, c.email, c.phone, c.remarks, id)
-    .run();
+export async function updateCustomer(db: Sql, id: number, c: CustomerInput): Promise<void> {
+  await db.exec(
+    `UPDATE keleo.customers SET type = $1, company = $2, salutation = $3, first_name = $4, last_name = $5, street = $6, house_no = $7, zip = $8, city = $9,
+       country = $10, email = $11, phone = $12, remarks = $13, updated_at = ${NOW} WHERE id = $14`,
+    [c.type, c.company, c.salutation, c.first_name, c.last_name, c.street, c.house_no, c.zip, c.city, c.country, c.email, c.phone, c.remarks, id],
+  );
 }
 
-export async function setCustomerArchived(db: D1Database, id: number, archived: boolean): Promise<void> {
-  await db.prepare(`UPDATE customers SET archived = ?, updated_at = datetime('now') WHERE id = ?`).bind(archived ? 1 : 0, id).run();
+export async function setCustomerArchived(db: Sql, id: number, archived: boolean): Promise<void> {
+  await db.exec(`UPDATE keleo.customers SET archived = $1, updated_at = ${NOW} WHERE id = $2`, [archived ? 1 : 0, id]);
 }
 
 /** Löscht den Kunden, wenn keine Dokumente existieren – sonst wird er archiviert. */
-export async function deleteOrArchiveCustomer(db: D1Database, id: number): Promise<'deleted' | 'archived'> {
-  const n = await db.prepare('SELECT COUNT(*) AS n FROM documents WHERE customer_id = ?').bind(id).first<{ n: number }>();
+export async function deleteOrArchiveCustomer(db: Sql, id: number): Promise<'deleted' | 'archived'> {
+  const n = await db.one<{ n: number }>('SELECT COUNT(*) AS n FROM keleo.documents WHERE customer_id = $1', [id]);
   if ((n?.n ?? 0) > 0) {
     await setCustomerArchived(db, id, true);
     return 'archived';
   }
-  await db.prepare('DELETE FROM customers WHERE id = ?').bind(id).run();
+  await db.exec('DELETE FROM keleo.customers WHERE id = $1', [id]);
   return 'deleted';
 }
 
-export async function listNotes(db: D1Database, customerId: number): Promise<CustomerNote[]> {
-  const r = await db.prepare('SELECT * FROM customer_notes WHERE customer_id = ? ORDER BY created_at DESC, id DESC').bind(customerId).all<CustomerNote>();
-  return r.results;
+export async function listNotes(db: Sql, customerId: number): Promise<CustomerNote[]> {
+  return db.query<CustomerNote>('SELECT * FROM keleo.customer_notes WHERE customer_id = $1 ORDER BY created_at DESC, id DESC', [customerId]);
 }
 
-export async function addNote(db: D1Database, customerId: number, body: string): Promise<void> {
-  await db.prepare('INSERT INTO customer_notes (customer_id, body) VALUES (?, ?)').bind(customerId, body).run();
+export async function addNote(db: Sql, customerId: number, body: string): Promise<void> {
+  await db.exec('INSERT INTO keleo.customer_notes (customer_id, body) VALUES ($1, $2)', [customerId, body]);
 }
 
-export async function deleteNote(db: D1Database, id: number): Promise<number | null> {
-  const n = await db.prepare('SELECT customer_id FROM customer_notes WHERE id = ?').bind(id).first<{ customer_id: number }>();
+export async function deleteNote(db: Sql, id: number): Promise<number | null> {
+  const n = await db.one<{ customer_id: number }>('SELECT customer_id FROM keleo.customer_notes WHERE id = $1', [id]);
   if (!n) return null;
-  await db.prepare('DELETE FROM customer_notes WHERE id = ?').bind(id).run();
+  await db.exec('DELETE FROM keleo.customer_notes WHERE id = $1', [id]);
   return n.customer_id;
 }
 
@@ -296,180 +290,177 @@ export async function deleteNote(db: D1Database, id: number): Promise<number | n
 
 const TASK_SELECT = `
   SELECT t.*, ${CUSTOMER_NAME_SQL} AS customer_name, d.number AS document_number, d.kind AS document_kind
-  FROM tasks t
-  LEFT JOIN customers c ON c.id = t.customer_id
-  LEFT JOIN documents d ON d.id = t.document_id`;
+  FROM keleo.tasks t
+  LEFT JOIN keleo.customers c ON c.id = t.customer_id
+  LEFT JOIN keleo.documents d ON d.id = t.document_id`;
 
-export async function listTasks(db: D1Database, opts: { done?: boolean; customerId?: number; limit?: number } = {}): Promise<Task[]> {
+export async function listTasks(db: Sql, opts: { done?: boolean; customerId?: number; limit?: number } = {}): Promise<Task[]> {
   const where: string[] = [];
   const params: unknown[] = [];
   if (opts.done !== undefined) {
-    where.push('t.done = ?');
     params.push(opts.done ? 1 : 0);
+    where.push(`t.done = $${params.length}`);
   }
   if (opts.customerId !== undefined) {
-    where.push('t.customer_id = ?');
     params.push(opts.customerId);
+    where.push(`t.customer_id = $${params.length}`);
   }
   const sql = `${TASK_SELECT} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
     ORDER BY t.done ASC, CASE WHEN t.due_date IS NULL THEN 1 ELSE 0 END, t.due_date ASC, t.id DESC
     ${opts.limit ? 'LIMIT ' + Math.floor(opts.limit) : ''}`;
-  const r = await db.prepare(sql).bind(...params).all<Task>();
-  return r.results;
+  return db.query<Task>(sql, params);
 }
 
-export async function createTask(db: D1Database, t: { title: string; details: string; customer_id: number | null; document_id: number | null; due_date: string | null }): Promise<number> {
-  const r = await db
-    .prepare('INSERT INTO tasks (title, details, customer_id, document_id, due_date) VALUES (?, ?, ?, ?, ?)')
-    .bind(t.title, t.details, t.customer_id, t.document_id, t.due_date)
-    .run();
-  return Number(r.meta.last_row_id);
+export async function createTask(db: Sql, t: { title: string; details: string; customer_id: number | null; document_id: number | null; due_date: string | null }): Promise<number> {
+  const row = await db.one<{ id: number }>(
+    'INSERT INTO keleo.tasks (title, details, customer_id, document_id, due_date) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+    [t.title, t.details, t.customer_id, t.document_id, t.due_date],
+  );
+  return row!.id;
 }
 
-export async function setTaskDone(db: D1Database, id: number, done: boolean): Promise<void> {
-  await db.prepare(`UPDATE tasks SET done = ?, done_at = CASE WHEN ? = 1 THEN datetime('now') ELSE NULL END WHERE id = ?`).bind(done ? 1 : 0, done ? 1 : 0, id).run();
+export async function setTaskDone(db: Sql, id: number, done: boolean): Promise<void> {
+  await db.exec(`UPDATE keleo.tasks SET done = $1, done_at = CASE WHEN $1 = 1 THEN ${NOW} ELSE NULL END WHERE id = $2`, [done ? 1 : 0, id]);
 }
 
-export async function deleteTask(db: D1Database, id: number): Promise<void> {
-  await db.prepare('DELETE FROM tasks WHERE id = ?').bind(id).run();
+export async function deleteTask(db: Sql, id: number): Promise<void> {
+  await db.exec('DELETE FROM keleo.tasks WHERE id = $1', [id]);
 }
 
 // ---------- Dokumente (Offerten & Rechnungen) ----------
 
-export async function nextNumber(db: D1Database, kind: DocumentKind, year: number, prefix: string): Promise<string> {
-  const row = await db
-    .prepare(
-      `INSERT INTO counters (kind, year, next) VALUES (?, ?, 2)
-       ON CONFLICT(kind, year) DO UPDATE SET next = next + 1
-       RETURNING next - 1 AS n`,
-    )
-    .bind(kind, year)
-    .first<{ n: number }>();
+export async function nextNumber(db: Sql, kind: DocumentKind, year: number, prefix: string): Promise<string> {
+  const row = await db.one<{ n: number }>(
+    `INSERT INTO keleo.counters (kind, year, next) VALUES ($1, $2, 2)
+     ON CONFLICT (kind, year) DO UPDATE SET next = keleo.counters.next + 1
+     RETURNING next - 1 AS n`,
+    [kind, year],
+  );
   const n = row?.n ?? 1;
   return `${prefix}-${year}-${String(n).padStart(4, '0')}`;
 }
 
-function itemStatements(db: D1Database, documentId: number, input: DocumentInput) {
+async function insertItems(t: Sql, documentId: number, input: DocumentInput): Promise<void> {
   const totals = computeTotals(input.items, input.discount_percent, input.vat_enabled, input.currency);
-  const stmts = totals.items.map((it, idx) =>
-    db
-      .prepare('INSERT INTO document_items (document_id, position, description, quantity, unit, unit_price, vat_rate, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(documentId, idx + 1, it.description, it.quantity, it.unit, it.unit_price, input.vat_enabled ? it.vat_rate : 0, it.amount),
-  );
-  return { totals, stmts };
+  for (const [idx, it] of totals.items.entries()) {
+    await t.exec(
+      'INSERT INTO keleo.document_items (document_id, position, description, quantity, unit, unit_price, vat_rate, amount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [documentId, idx + 1, it.description, it.quantity, it.unit, it.unit_price, input.vat_enabled ? it.vat_rate : 0, it.amount],
+    );
+  }
 }
 
-export async function createDocument(db: D1Database, kind: DocumentKind, input: DocumentInput, prefix: string, sourceId: number | null = null): Promise<number> {
+export async function createDocument(db: Sql, kind: DocumentKind, input: DocumentInput, prefix: string, sourceId: number | null = null): Promise<number> {
   const year = parseInt(input.date.slice(0, 4), 10);
-  const number = await nextNumber(db, kind, year, prefix);
   const totals = computeTotals(input.items, input.discount_percent, input.vat_enabled, input.currency);
-  const r = await db
-    .prepare(
-      `INSERT INTO documents (kind, number, customer_id, status, date, due_date, title, intro, footer, discount_percent, vat_enabled, currency,
+  return db.tx(async (t) => {
+    const number = await nextNumber(t, kind, year, prefix);
+    const row = await t.one<{ id: number }>(
+      `INSERT INTO keleo.documents (kind, number, customer_id, status, date, due_date, title, intro, footer, discount_percent, vat_enabled, currency,
          subtotal, discount_amount, vat_amount, rounding, total, source_id)
-       VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(
-      kind, number, input.customer_id, input.date, input.due_date, input.title, input.intro, input.footer, input.discount_percent,
-      input.vat_enabled ? 1 : 0, input.currency, totals.subtotal, totals.discount_amount, totals.vat_amount, totals.rounding, totals.total, sourceId,
-    )
-    .run();
-  const id = Number(r.meta.last_row_id);
-  const { stmts } = itemStatements(db, id, input);
-  if (stmts.length) await db.batch(stmts);
-  return id;
+       VALUES ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+      [
+        kind, number, input.customer_id, input.date, input.due_date, input.title, input.intro, input.footer, input.discount_percent,
+        input.vat_enabled ? 1 : 0, input.currency, totals.subtotal, totals.discount_amount, totals.vat_amount, totals.rounding, totals.total, sourceId,
+      ],
+    );
+    await insertItems(t, row!.id, input);
+    return row!.id;
+  });
 }
 
-export async function updateDocument(db: D1Database, id: number, input: DocumentInput): Promise<void> {
-  const { totals, stmts } = itemStatements(db, id, input);
-  await db.batch([
-    db
-      .prepare(
-        `UPDATE documents SET customer_id = ?, date = ?, due_date = ?, title = ?, intro = ?, footer = ?, discount_percent = ?, vat_enabled = ?, currency = ?,
-           subtotal = ?, discount_amount = ?, vat_amount = ?, rounding = ?, total = ?, updated_at = datetime('now') WHERE id = ?`,
-      )
-      .bind(
+export async function updateDocument(db: Sql, id: number, input: DocumentInput): Promise<void> {
+  const totals = computeTotals(input.items, input.discount_percent, input.vat_enabled, input.currency);
+  await db.tx(async (t) => {
+    await t.exec(
+      `UPDATE keleo.documents SET customer_id = $1, date = $2, due_date = $3, title = $4, intro = $5, footer = $6, discount_percent = $7, vat_enabled = $8, currency = $9,
+         subtotal = $10, discount_amount = $11, vat_amount = $12, rounding = $13, total = $14, updated_at = ${NOW} WHERE id = $15`,
+      [
         input.customer_id, input.date, input.due_date, input.title, input.intro, input.footer, input.discount_percent, input.vat_enabled ? 1 : 0,
         input.currency, totals.subtotal, totals.discount_amount, totals.vat_amount, totals.rounding, totals.total, id,
-      ),
-    db.prepare('DELETE FROM document_items WHERE document_id = ?').bind(id),
-    ...stmts,
-  ]);
+      ],
+    );
+    await t.exec('DELETE FROM keleo.document_items WHERE document_id = $1', [id]);
+    await insertItems(t, id, input);
+  });
 }
 
-export async function listDocuments(db: D1Database, kind: DocumentKind, filter: { status?: string; customerId?: number; q?: string; limit?: number } = {}): Promise<DocumentRow[]> {
-  const where: string[] = ['d.kind = ?'];
+export async function listDocuments(
+  db: Sql,
+  kind: DocumentKind,
+  filter: { status?: string; customerId?: number; q?: string; limit?: number; today?: string } = {},
+): Promise<DocumentRow[]> {
   const params: unknown[] = [kind];
+  const where: string[] = ['d.kind = $1'];
   if (filter.customerId !== undefined) {
-    where.push('d.customer_id = ?');
     params.push(filter.customerId);
+    where.push(`d.customer_id = $${params.length}`);
   }
   if (filter.q) {
-    where.push(`(d.number LIKE ? OR d.title LIKE ? OR ${CUSTOMER_NAME_SQL} LIKE ?)`);
-    params.push(`%${filter.q}%`, `%${filter.q}%`, `%${filter.q}%`);
+    params.push(`%${filter.q}%`);
+    where.push(`(d.number ILIKE $${params.length} OR d.title ILIKE $${params.length} OR ${CUSTOMER_NAME_SQL} ILIKE $${params.length})`);
   }
   if (filter.status && filter.status !== 'all') {
-    if (filter.status === 'overdue') where.push(`d.status = 'sent' AND d.due_date < date('now')`);
-    else if (filter.status === 'open') where.push(`d.status = 'sent'`);
+    if (filter.status === 'overdue') {
+      params.push(filter.today ?? new Date().toISOString().slice(0, 10));
+      where.push(`d.status = 'sent' AND d.due_date < $${params.length}`);
+    } else if (filter.status === 'open') where.push(`d.status = 'sent'`);
     else {
-      where.push('d.status = ?');
       params.push(filter.status);
+      where.push(`d.status = $${params.length}`);
     }
   }
   const sql = `
     SELECT d.*, ${CUSTOMER_NAME_SQL} AS customer_name, ${PAID_SQL} AS paid
-    FROM documents d JOIN customers c ON c.id = d.customer_id
+    FROM keleo.documents d JOIN keleo.customers c ON c.id = d.customer_id
     WHERE ${where.join(' AND ')}
     ORDER BY d.date DESC, d.id DESC
     ${filter.limit ? 'LIMIT ' + Math.floor(filter.limit) : ''}`;
-  const r = await db.prepare(sql).bind(...params).all<DocumentRow>();
-  return r.results;
+  return db.query<DocumentRow>(sql, params);
 }
 
-export async function getDocument(db: D1Database, id: number): Promise<DocumentFull | null> {
-  const doc = await db
-    .prepare(`SELECT d.*, ${CUSTOMER_NAME_SQL} AS customer_name, ${PAID_SQL} AS paid FROM documents d JOIN customers c ON c.id = d.customer_id WHERE d.id = ?`)
-    .bind(id)
-    .first<DocumentRow>();
+export async function getDocument(db: Sql, id: number): Promise<DocumentFull | null> {
+  const doc = await db.one<DocumentRow>(
+    `SELECT d.*, ${CUSTOMER_NAME_SQL} AS customer_name, ${PAID_SQL} AS paid FROM keleo.documents d JOIN keleo.customers c ON c.id = d.customer_id WHERE d.id = $1`,
+    [id],
+  );
   if (!doc) return null;
   const [items, payments, customer, source, invoices] = await Promise.all([
-    db.prepare('SELECT * FROM document_items WHERE document_id = ? ORDER BY position').bind(id).all<DocumentItem>(),
-    db.prepare('SELECT * FROM payments WHERE document_id = ? ORDER BY date DESC, id DESC').bind(id).all<Payment>(),
+    db.query<DocumentItem>('SELECT * FROM keleo.document_items WHERE document_id = $1 ORDER BY position', [id]),
+    db.query<Payment>('SELECT * FROM keleo.payments WHERE document_id = $1 ORDER BY date DESC, id DESC', [id]),
     getCustomer(db, doc.customer_id),
-    doc.source_id ? db.prepare('SELECT number FROM documents WHERE id = ?').bind(doc.source_id).first<{ number: string }>() : Promise.resolve(null),
-    db.prepare(`SELECT id, number FROM documents WHERE source_id = ? AND kind = 'invoice' ORDER BY id`).bind(id).all<{ id: number; number: string }>(),
+    doc.source_id ? db.one<{ number: string }>('SELECT number FROM keleo.documents WHERE id = $1', [doc.source_id]) : Promise.resolve(null),
+    db.query<{ id: number; number: string }>(`SELECT id, number FROM keleo.documents WHERE source_id = $1 AND kind = 'invoice' ORDER BY id`, [id]),
   ]);
   if (!customer) return null;
-  return { ...doc, items: items.results, payments: payments.results, customer, source_number: source?.number ?? null, invoice_numbers: invoices.results };
+  return { ...doc, items, payments, customer, source_number: source?.number ?? null, invoice_numbers: invoices };
 }
 
-export async function deleteDocument(db: D1Database, id: number): Promise<void> {
-  await db.prepare('DELETE FROM documents WHERE id = ?').bind(id).run();
+export async function deleteDocument(db: Sql, id: number): Promise<void> {
+  await db.exec('DELETE FROM keleo.documents WHERE id = $1', [id]);
 }
 
-export async function setDocumentStatus(db: D1Database, id: number, status: string): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE documents SET status = ?,
-         sent_at = CASE WHEN ? = 'sent' AND sent_at IS NULL THEN datetime('now') ELSE sent_at END,
-         paid_at = CASE WHEN ? = 'paid' THEN COALESCE(paid_at, date('now')) WHEN ? IN ('draft', 'sent') THEN NULL ELSE paid_at END,
-         updated_at = datetime('now')
-       WHERE id = ?`,
-    )
-    .bind(status, status, status, status, id)
-    .run();
+export async function setDocumentStatus(db: Sql, id: number, status: string): Promise<void> {
+  await db.exec(
+    `UPDATE keleo.documents SET status = $1,
+       sent_at = CASE WHEN $1 = 'sent' AND sent_at IS NULL THEN ${NOW} ELSE sent_at END,
+       paid_at = CASE WHEN $1 = 'paid' THEN COALESCE(paid_at, substr(${NOW}, 1, 10)) WHEN $1 IN ('draft', 'sent') THEN NULL ELSE paid_at END,
+       updated_at = ${NOW}
+     WHERE id = $2`,
+    [status, id],
+  );
 }
 
-export async function setReference(db: D1Database, id: number, reference: string): Promise<void> {
-  await db.prepare('UPDATE documents SET reference = ? WHERE id = ?').bind(reference, id).run();
+export async function setReference(db: Sql, id: number, reference: string): Promise<void> {
+  await db.exec('UPDATE keleo.documents SET reference = $1 WHERE id = $2', [reference, id]);
 }
 
-export async function setReminder(db: D1Database, id: number, level: number, dateIso: string): Promise<void> {
-  await db.prepare(`UPDATE documents SET reminder_level = ?, reminder_at = ?, updated_at = datetime('now') WHERE id = ?`).bind(level, dateIso, id).run();
+export async function setReminder(db: Sql, id: number, level: number, dateIso: string): Promise<void> {
+  await db.exec(`UPDATE keleo.documents SET reminder_level = $1, reminder_at = $2, updated_at = ${NOW} WHERE id = $3`, [level, dateIso, id]);
 }
 
-export async function setDueDate(db: D1Database, id: number, dueDate: string): Promise<void> {
-  await db.prepare(`UPDATE documents SET due_date = ?, updated_at = datetime('now') WHERE id = ?`).bind(dueDate, id).run();
+export async function setDueDate(db: Sql, id: number, dueDate: string): Promise<void> {
+  await db.exec(`UPDATE keleo.documents SET due_date = $1, updated_at = ${NOW} WHERE id = $2`, [dueDate, id]);
 }
 
 function toInput(doc: DocumentFull, overrides: Partial<DocumentInput>): DocumentInput {
@@ -489,43 +480,43 @@ function toInput(doc: DocumentFull, overrides: Partial<DocumentInput>): Document
 }
 
 /** Kopiert ein Dokument als neuen Entwurf mit heutigem Datum. */
-export async function copyDocument(db: D1Database, doc: DocumentFull, prefix: string, dateIso: string, dueIso: string | null): Promise<number> {
+export async function copyDocument(db: Sql, doc: DocumentFull, prefix: string, dateIso: string, dueIso: string | null): Promise<number> {
   return createDocument(db, doc.kind, toInput(doc, { date: dateIso, due_date: dueIso }), prefix);
 }
 
 /** Erstellt aus einer Offerte eine Rechnung (Entwurf) und markiert die Offerte als verrechnet. */
-export async function convertQuoteToInvoice(db: D1Database, quote: DocumentFull, prefix: string, dateIso: string, dueIso: string, intro: string, footer: string): Promise<number> {
+export async function convertQuoteToInvoice(db: Sql, quote: DocumentFull, prefix: string, dateIso: string, dueIso: string, intro: string, footer: string): Promise<number> {
   const id = await createDocument(db, 'invoice', toInput(quote, { date: dateIso, due_date: dueIso, intro, footer }), prefix, quote.id);
-  await db.prepare(`UPDATE documents SET status = 'invoiced', updated_at = datetime('now') WHERE id = ?`).bind(quote.id).run();
+  await db.exec(`UPDATE keleo.documents SET status = 'invoiced', updated_at = ${NOW} WHERE id = $1`, [quote.id]);
   return id;
 }
 
 // ---------- Zahlungen ----------
 
-export async function addPayment(db: D1Database, documentId: number, p: { date: string; amount: number; method: string; note: string }): Promise<void> {
-  await db.prepare('INSERT INTO payments (document_id, date, amount, method, note) VALUES (?, ?, ?, ?, ?)').bind(documentId, p.date, p.amount, p.method, p.note).run();
+export async function addPayment(db: Sql, documentId: number, p: { date: string; amount: number; method: string; note: string }): Promise<void> {
+  await db.exec('INSERT INTO keleo.payments (document_id, date, amount, method, note) VALUES ($1, $2, $3, $4, $5)', [documentId, p.date, p.amount, p.method, p.note]);
   await recalcPaymentStatus(db, documentId);
 }
 
-export async function deletePayment(db: D1Database, paymentId: number): Promise<number | null> {
-  const p = await db.prepare('SELECT document_id FROM payments WHERE id = ?').bind(paymentId).first<{ document_id: number }>();
+export async function deletePayment(db: Sql, paymentId: number): Promise<number | null> {
+  const p = await db.one<{ document_id: number }>('SELECT document_id FROM keleo.payments WHERE id = $1', [paymentId]);
   if (!p) return null;
-  await db.prepare('DELETE FROM payments WHERE id = ?').bind(paymentId).run();
+  await db.exec('DELETE FROM keleo.payments WHERE id = $1', [paymentId]);
   await recalcPaymentStatus(db, p.document_id);
   return p.document_id;
 }
 
 /** Setzt den Status auf "bezahlt", sobald die Zahlungen das Total decken, bzw. zurück auf "gesendet". */
-export async function recalcPaymentStatus(db: D1Database, documentId: number): Promise<void> {
-  const row = await db
-    .prepare(`SELECT d.total, d.status, ${PAID_SQL} AS paid, (SELECT MAX(date) FROM payments p WHERE p.document_id = d.id) AS last_date FROM documents d WHERE d.id = ?`)
-    .bind(documentId)
-    .first<{ total: number; status: string; paid: number; last_date: string | null }>();
+export async function recalcPaymentStatus(db: Sql, documentId: number): Promise<void> {
+  const row = await db.one<{ total: number; status: string; paid: number; last_date: string | null }>(
+    `SELECT d.total, d.status, ${PAID_SQL} AS paid, (SELECT MAX(p.date) FROM keleo.payments p WHERE p.document_id = d.id) AS last_date FROM keleo.documents d WHERE d.id = $1`,
+    [documentId],
+  );
   if (!row) return;
   if (row.paid >= row.total && row.total > 0 && row.status !== 'cancelled') {
-    await db.prepare(`UPDATE documents SET status = 'paid', paid_at = ?, sent_at = COALESCE(sent_at, datetime('now')), updated_at = datetime('now') WHERE id = ?`).bind(row.last_date, documentId).run();
+    await db.exec(`UPDATE keleo.documents SET status = 'paid', paid_at = $1, sent_at = COALESCE(sent_at, ${NOW}), updated_at = ${NOW} WHERE id = $2`, [row.last_date, documentId]);
   } else if (row.status === 'paid') {
-    await db.prepare(`UPDATE documents SET status = 'sent', paid_at = NULL, updated_at = datetime('now') WHERE id = ?`).bind(documentId).run();
+    await db.exec(`UPDATE keleo.documents SET status = 'sent', paid_at = NULL, updated_at = ${NOW} WHERE id = $1`, [documentId]);
   }
 }
 
@@ -544,24 +535,22 @@ export interface DashboardStats {
   customer_count: number;
 }
 
-export async function getDashboardStats(db: D1Database, todayIso: string): Promise<DashboardStats> {
+export async function getDashboardStats(db: Sql, todayIso: string): Promise<DashboardStats> {
   const yearStart = todayIso.slice(0, 4) + '-01-01';
-  const row = await db
-    .prepare(
-      `SELECT
-        (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0) FROM documents d WHERE d.kind = 'invoice' AND d.status = 'sent') AS open_amount,
-        (SELECT COUNT(*) FROM documents d WHERE d.kind = 'invoice' AND d.status = 'sent') AS open_count,
-        (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0) FROM documents d WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < ?1) AS overdue_amount,
-        (SELECT COUNT(*) FROM documents d WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < ?1) AS overdue_count,
-        (SELECT COALESCE(SUM(total), 0) FROM documents WHERE kind = 'quote' AND status = 'sent') AS quotes_amount,
-        (SELECT COUNT(*) FROM documents WHERE kind = 'quote' AND status = 'sent') AS quotes_count,
-        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE date >= ?2) AS paid_year,
-        (SELECT COALESCE(SUM(total), 0) FROM documents WHERE kind = 'invoice' AND status IN ('sent', 'paid') AND date >= ?2) AS invoiced_year,
-        (SELECT COUNT(*) FROM tasks WHERE done = 0) AS open_tasks,
-        (SELECT COUNT(*) FROM customers WHERE archived = 0) AS customer_count`,
-    )
-    .bind(todayIso, yearStart)
-    .first<DashboardStats>();
+  const row = await db.one<DashboardStats>(
+    `SELECT
+      (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0)::bigint FROM keleo.documents d WHERE d.kind = 'invoice' AND d.status = 'sent') AS open_amount,
+      (SELECT COUNT(*) FROM keleo.documents d WHERE d.kind = 'invoice' AND d.status = 'sent') AS open_count,
+      (SELECT COALESCE(SUM(d.total - ${PAID_SQL}), 0)::bigint FROM keleo.documents d WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < $1) AS overdue_amount,
+      (SELECT COUNT(*) FROM keleo.documents d WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < $1) AS overdue_count,
+      (SELECT COALESCE(SUM(total), 0)::bigint FROM keleo.documents WHERE kind = 'quote' AND status = 'sent') AS quotes_amount,
+      (SELECT COUNT(*) FROM keleo.documents WHERE kind = 'quote' AND status = 'sent') AS quotes_count,
+      (SELECT COALESCE(SUM(amount), 0)::bigint FROM keleo.payments WHERE date >= $2) AS paid_year,
+      (SELECT COALESCE(SUM(total), 0)::bigint FROM keleo.documents WHERE kind = 'invoice' AND status IN ('sent', 'paid') AND date >= $2) AS invoiced_year,
+      (SELECT COUNT(*) FROM keleo.tasks WHERE done = 0) AS open_tasks,
+      (SELECT COUNT(*) FROM keleo.customers WHERE archived = 0) AS customer_count`,
+    [todayIso, yearStart],
+  );
   return row!;
 }
 
@@ -576,19 +565,19 @@ export interface Todo {
 }
 
 /** Stellt die "Zu erledigen"-Liste des Dashboards zusammen. */
-export async function getTodos(db: D1Database, todayIso: string): Promise<Todo[]> {
+export async function getTodos(db: Sql, todayIso: string): Promise<Todo[]> {
   const todos: Todo[] = [];
-  const base = `SELECT d.*, ${CUSTOMER_NAME_SQL} AS customer_name, ${PAID_SQL} AS paid FROM documents d JOIN customers c ON c.id = d.customer_id`;
+  const base = `SELECT d.*, ${CUSTOMER_NAME_SQL} AS customer_name, ${PAID_SQL} AS paid FROM keleo.documents d JOIN keleo.customers c ON c.id = d.customer_id`;
 
-  const overdue = await db.prepare(`${base} WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < ?1 ORDER BY d.due_date`).bind(todayIso).all<DocumentRow>();
-  for (const d of overdue.results) {
+  const overdue = await db.query<DocumentRow>(`${base} WHERE d.kind = 'invoice' AND d.status = 'sent' AND d.due_date < $1 ORDER BY d.due_date`, [todayIso]);
+  for (const d of overdue) {
     const days = Math.round((Date.parse(todayIso) - Date.parse(d.due_date!)) / 86400000);
     const next = d.reminder_level === 0 ? 'Zahlungserinnerung senden' : d.reminder_level === 1 ? '1. Mahnung senden' : d.reminder_level === 2 ? '2. Mahnung senden' : 'Weiteres Vorgehen prüfen (Betreibung?)';
     todos.push({ type: 'overdue', label: `Rechnung ${d.number} · ${d.customer_name}`, detail: `${days} Tage überfällig · ${next}`, href: `/rechnungen/${d.id}`, due: d.due_date, amount: d.total - d.paid, urgency: 'high' });
   }
 
-  const quotes = await db.prepare(`${base} WHERE d.kind = 'quote' AND d.status = 'sent' ORDER BY d.due_date`).all<DocumentRow>();
-  for (const d of quotes.results) {
+  const quotes = await db.query<DocumentRow>(`${base} WHERE d.kind = 'quote' AND d.status = 'sent' ORDER BY d.due_date`);
+  for (const d of quotes) {
     const expired = !!d.due_date && d.due_date < todayIso;
     const sentDays = d.sent_at ? Math.round((Date.parse(todayIso) - Date.parse(d.sent_at.slice(0, 10))) / 86400000) : 0;
     if (expired) {
@@ -613,8 +602,9 @@ export async function getTodos(db: D1Database, todayIso: string): Promise<Todo[]
     });
   }
 
-  const drafts = await db.prepare(`${base} WHERE d.status = 'draft' AND d.created_at < datetime('now', '-7 days') ORDER BY d.created_at`).all<DocumentRow>();
-  for (const d of drafts.results) {
+  const weekAgo = new Date(Date.parse(todayIso) - 7 * 86400000).toISOString().slice(0, 10) + ' 00:00:00';
+  const drafts = await db.query<DocumentRow>(`${base} WHERE d.status = 'draft' AND d.created_at < $1 ORDER BY d.created_at`, [weekAgo]);
+  for (const d of drafts) {
     const meta = d.kind === 'quote' ? 'Offerte' : 'Rechnung';
     todos.push({ type: 'draft', label: `${meta} ${d.number} · ${d.customer_name}`, detail: 'Entwurf seit über einer Woche · fertigstellen oder löschen', href: `${d.kind === 'quote' ? '/offerten' : '/rechnungen'}/${d.id}`, due: null, amount: d.total, urgency: 'low' });
   }

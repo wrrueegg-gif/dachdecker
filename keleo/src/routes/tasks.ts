@@ -10,7 +10,7 @@ export const tasks = new Hono<AppEnv>();
 
 tasks.get('/', async (c) => {
   const showDone = c.req.query('erledigt') === '1';
-  const [list, customers] = await Promise.all([listTasks(c.env.DB, { done: showDone }), listCustomers(c.env.DB)]);
+  const [list, customers] = await Promise.all([listTasks(c.get('db'), { done: showDone }), listCustomers(c.get('db'))]);
   return render(c, 'Aufgaben', 'tasks', TasksPage({ tasks: list, customers, showDone, today: today() }), {
     subtitle: showDone ? 'Erledigte Aufgaben' : `${list.length} offen`,
   });
@@ -27,7 +27,7 @@ tasks.post('/', async (c) => {
   const due = str(body, 'due_date');
   const customerId = int(body, 'customer_id', 0);
   const documentId = int(body, 'document_id', 0);
-  await createTask(c.env.DB, {
+  await createTask(c.get('db'), {
     title,
     details: str(body, 'details'),
     customer_id: customerId > 0 ? customerId : null,
@@ -42,7 +42,7 @@ tasks.post('/:id/erledigt', async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
   const body = (await c.req.parseBody()) as Body;
-  await setTaskDone(c.env.DB, id, str(body, 'done', '1') !== '0');
+  await setTaskDone(c.get('db'), id, str(body, 'done', '1') !== '0');
   return c.redirect(safeBack(str(body, 'back'), '/aufgaben'));
 });
 
@@ -50,7 +50,7 @@ tasks.post('/:id/loeschen', async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
   const body = (await c.req.parseBody()) as Body;
-  await deleteTask(c.env.DB, id);
+  await deleteTask(c.get('db'), id);
   flash(c, 'success', 'Aufgabe gelöscht.');
   return c.redirect(safeBack(str(body, 'back'), '/aufgaben'));
 });

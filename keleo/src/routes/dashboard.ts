@@ -8,7 +8,7 @@ import { render } from './shared';
 export const dashboard = new Hono<AppEnv>();
 
 dashboard.get('/', async (c) => {
-  const db = c.env.DB;
+  const db = c.get('db');
   const t = today();
   const [stats, todos, invoices, quotes] = await Promise.all([
     getDashboardStats(db, t),

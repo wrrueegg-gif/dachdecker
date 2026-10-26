@@ -1,7 +1,0 @@
-# Lokale Entwicklung: Datei nach .dev.vars kopieren und Werte anpassen.
-# In der Cloud werden diese Werte mit `wrangler secret put NAME` gesetzt.
-APP_PASSWORD=keleo
-SESSION_SECRET=bitte-durch-eine-lange-zufaellige-zeichenkette-ersetzen
-# Optional, für E-Mail-Versand über Resend (https://resend.com):
-# RESEND_API_KEY=re_xxxxxxxxx
-# MAIL_FROM="Meine Firma <rechnungen@meine-domain.ch>"

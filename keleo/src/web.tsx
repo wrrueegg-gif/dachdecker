@@ -1,10 +1,12 @@
 /**
- * Keleo – Einstiegspunkt des Cloudflare Workers.
- * Hono übernimmt Routing und serverseitiges Rendering (JSX → HTML).
+ * Keleo – die Hono-Anwendung (Routing und serverseitiges Rendering, JSX → HTML).
+ * Läuft auf Vercel (src/index.ts) und lokal mit Node (src/dev.ts).
  */
 import { Hono } from 'hono';
 import { checkPassword, clearSession, createSession, hasValidSession, isConfigured, requireAuth, sameOriginOnly } from './auth';
+import { config } from './config';
 import { getSettings } from './db';
+import { getDb } from './db/index';
 import type { AppEnv } from './env';
 import { str, type Body } from './lib/form';
 import { customers } from './routes/customers';
@@ -24,20 +26,20 @@ app.get('/_health', (c) => c.text('ok'));
 
 // ---- Anmeldung (ohne Session erreichbar) ----
 app.get('/login', async (c) => {
-  if (c.env.SESSION_SECRET && (await hasValidSession(c, c.env.SESSION_SECRET))) return c.redirect('/');
-  return c.html(asHtml(LoginPage({ appName: c.env.APP_NAME || 'Keleo', configured: isConfigured(c.env), next: c.req.query('next') })));
+  if (config.sessionSecret && (await hasValidSession(c, config.sessionSecret))) return c.redirect('/');
+  return c.html(asHtml(LoginPage({ appName: config.appName, configured: isConfigured(), next: c.req.query('next') })));
 });
 
 app.post('/login', async (c) => {
-  const appName = c.env.APP_NAME || 'Keleo';
-  if (!isConfigured(c.env)) return c.html(asHtml(LoginPage({ appName, configured: false })), 500);
+  const appName = config.appName;
+  if (!isConfigured()) return c.html(asHtml(LoginPage({ appName, configured: false })), 500);
   const body = (await c.req.parseBody()) as Body;
-  const ok = await checkPassword(c.env.SESSION_SECRET!, str(body, 'password'), c.env.APP_PASSWORD!);
+  const ok = await checkPassword(config.sessionSecret!, str(body, 'password'), config.appPassword!);
   if (!ok) {
     await new Promise((r) => setTimeout(r, 500));
     return c.html(asHtml(LoginPage({ appName, configured: true, error: 'Das Passwort ist falsch.', next: str(body, 'next') })), 401);
   }
-  await createSession(c, c.env.SESSION_SECRET!, Math.max(1, parseInt(c.env.SESSION_DAYS || '30', 10) || 30));
+  await createSession(c, config.sessionSecret!, config.sessionDays);
   return c.redirect(safeBack(str(body, 'next'), '/'));
 });
 
@@ -49,7 +51,9 @@ app.post('/logout', (c) => {
 // ---- Ab hier nur angemeldet ----
 app.use('*', requireAuth);
 app.use('*', async (c, next) => {
-  c.set('settings', await getSettings(c.env.DB));
+  const db = await getDb();
+  c.set('db', db);
+  c.set('settings', await getSettings(db));
   c.set('flash', readFlash(c));
   await next();
 });
@@ -69,9 +73,11 @@ app.notFound((c) => {
 
 app.onError((err, c) => {
   console.error(err);
-  const hint = /no such table|D1_ERROR/i.test(err.message) ? 'Die Datenbank scheint noch nicht eingerichtet zu sein – bitte `npm run db:migrate:local` bzw. `npm run db:migrate:remote` ausführen.' : err.message;
+  const hint = /ECONNREFUSED|ENOTFOUND|password authentication|DATABASE_URL|connect/i.test(err.message)
+    ? 'Die Datenbank ist nicht erreichbar – bitte die Umgebungsvariable DATABASE_URL prüfen.'
+    : err.message;
   return c.html(
-    asHtml(<Plain title="Fehler" appName={c.env.APP_NAME || 'Keleo'}>
+    asHtml(<Plain title="Fehler" appName={config.appName}>
       <div class="login-box">
         <h1>Da ist etwas schiefgelaufen</h1>
         <p class="muted">{hint}</p>

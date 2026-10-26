@@ -92,7 +92,7 @@ export const SettingsPage: FC<{ s: Settings; mailConfigured: boolean; mailFrom: 
                 <ol class="small">
                   <li>Kostenloses Konto bei <strong>resend.com</strong> anlegen und die eigene Domain verifizieren.</li>
                   <li>API-Key erzeugen.</li>
-                  <li>Secrets setzen: <code>wrangler secret put RESEND_API_KEY</code> und <code>wrangler secret put MAIL_FROM</code> (z. B. «Firma &lt;rechnung@firma.ch&gt;»).</li>
+                  <li>Auf Vercel unter <em>Project Settings → Environment Variables</em> die Variablen <code>RESEND_API_KEY</code> und <code>MAIL_FROM</code> (z. B. «Firma &lt;rechnung@firma.ch&gt;») setzen und neu veröffentlichen.</li>
                 </ol>
                 <p class="muted">Bis dahin: PDF herunterladen und aus dem eigenen Mailprogramm senden.</p>
               </div>

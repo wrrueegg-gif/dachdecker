@@ -340,7 +340,7 @@ export const DocumentDetail: FC<DetailProps> = ({ doc, settings, today, qrErrors
 
         <Card title="Per E-Mail senden">
           {!mailConfigured ? (
-            <p class="hint">E-Mail-Versand ist nicht eingerichtet (Secrets <code>RESEND_API_KEY</code> und <code>MAIL_FROM</code>). Alternativ das PDF herunterladen und aus dem eigenen Mailprogramm versenden – anschliessend «Als gesendet markieren».</p>
+            <p class="hint">E-Mail-Versand ist nicht eingerichtet (Umgebungsvariablen <code>RESEND_API_KEY</code> und <code>MAIL_FROM</code>). Alternativ das PDF herunterladen und aus dem eigenen Mailprogramm versenden – anschliessend «Als gesendet markieren».</p>
           ) : null}
           {!doc.customer.email ? <p class="hint warn">Der Kunde hat keine E-Mail-Adresse hinterlegt.</p> : null}
           <form method="post" action={`${base}/senden`} class="stack">
