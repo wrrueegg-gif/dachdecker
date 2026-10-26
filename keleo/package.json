@@ -12,7 +12,8 @@
     "db:migrate:local": "wrangler d1 migrations apply keleo --local",
     "db:migrate:remote": "wrangler d1 migrations apply keleo --remote",
     "db:create": "wrangler d1 create keleo",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "cloud:setup": "node scripts/cloud-setup.mjs"
   },
   "dependencies": {
     "hono": "^4.13.14",

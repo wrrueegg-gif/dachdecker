@@ -1,115 +1,155 @@
-# Keleo
+# SADA Bedachung — Conversion-Website
 
-Kleines Rechnungs- und Offertenprogramm für Schweizer Einzelfirmen und KMU – angelehnt an den Aufbau von koleo.ch, aber selbst gehostet auf Cloudflare (Workers + D1-Datenbank), ohne monatliche Gebühren im Normalbetrieb.
+> **Hinweis:** Im Ordner [`keleo/`](./keleo/) liegt ein eigenständiges zweites Projekt: **Keleo**, ein kleines Rechnungs- und Offertenprogramm mit Schweizer QR-Rechnung für Cloudflare Workers + D1 (siehe `keleo/README.md` und `keleo/PLAN.md`).
 
-- Kunden mit Adressen, Kontaktdaten, **freien Bemerkungen** und einem **Notiz-Journal**
-- **Offerten** erstellen, senden, annehmen lassen und per Klick in eine Rechnung umwandeln
-- **Rechnungen** mit Positionen, Rabatt, MwSt (optional), Rappenrundung, Zahlungen, Teilzahlungen, Zahlungserinnerung / 1. / 2. Mahnung
-- PDF mit **Schweizer QR-Rechnung** (Zahlteil + Empfangsschein nach SIX-Richtlinien v2.3, QR-IBAN mit QR-Referenz oder normale IBAN mit Creditor Reference)
-- **Übersicht** mit offenen und überfälligen Beträgen, offenen Offerten und einer «Zu erledigen»-Liste
-- **Aufgaben** (Pendenzen) mit Fälligkeit, optional einem Kunden zugeordnet
-- E-Mail-Versand der PDFs über Resend (optional)
-- Einzelbenutzer-Login mit Passwort
+Astro 4 + Tailwind 3, statisches Multi-Page-Setup mit Multi-Step-Angebotsrechner, Vorher-Nachher-Galerie und Branchen-Schwerpunkt Dachdecker/Spenglerei für die Schweiz (Kanton Zürich).
 
-Der ausführliche Plan (Architektur, Datenmodell, Cloudflare-Informationen, Phasen) steht in [PLAN.md](./PLAN.md).
+---
 
-## Technik
+## Stack
 
-| Teil | Technologie |
-|---|---|
-| Laufzeit | Cloudflare Workers (serverlos, weltweit verteilt) |
-| Datenbank | Cloudflare D1 (serverloses SQLite) |
-| Web-Framework | Hono mit serverseitigem JSX-Rendering |
-| PDF | pdf-lib + qrcode (reines JavaScript, läuft im Worker) |
-| Statische Dateien | Workers Static Assets (`public/`) |
-| Sprache | TypeScript |
+- **Astro 4** mit View Transitions, Sitemap-Integration
+- **Tailwind 3** mit eigenem Design-Token-Set (siehe `tailwind.config.mjs`)
+- **Instrument Sans + Inter Variable** als Schriften (selbst gehostet via Fontsource)
+- **Lucide-Icons** als Inline-SVG (kein Runtime-Overhead)
+- **Keine SPA, keine Hydration ausser Calculator + Vorher-Nachher-Slider** — der Rest ist statisches HTML + minimal JS für Reveal-Animationen
 
-Kein Frontend-Build nötig: `wrangler` bündelt den Worker, CSS und JS liegen fertig in `public/`.
+---
 
-## Lokal starten
-
-Voraussetzung: Node.js 20 oder neuer.
+## Setup
 
 ```bash
-cd keleo
 npm install
-cp .dev.vars.example .dev.vars        # Passwort und Session-Secret für lokal
-npm run db:migrate:local              # lokale SQLite-Datenbank anlegen
-npm run dev                           # http://localhost:8787
+npm run dev
 ```
 
-Anmelden mit dem Passwort aus `.dev.vars` (Standard `keleo`), dann unter **Einstellungen** Firma, Adresse und IBAN erfassen.
+Dev-Server: http://localhost:4321
 
 ```bash
-npm test          # Unit-Tests (QR-Rechnung, Beträge)
-npm run typecheck # TypeScript
+npm run build      # Produktions-Build nach /dist
+npm run preview    # Statische Vorschau des Builds
 ```
 
-## Auf Cloudflare veröffentlichen
+---
 
-1. Kostenloses Konto auf <https://dash.cloudflare.com> erstellen.
-2. Anmelden und Datenbank anlegen:
-   ```bash
-   npx wrangler login
-   npm run db:create
-   ```
-   Die ausgegebene `database_id` in `wrangler.jsonc` eintragen.
-3. Tabellen anlegen und Secrets setzen:
-   ```bash
-   npm run db:migrate:remote
-   npx wrangler secret put APP_PASSWORD     # Login-Passwort
-   npx wrangler secret put SESSION_SECRET   # lange zufällige Zeichenkette (z. B. openssl rand -hex 32)
-   ```
-4. Veröffentlichen:
-   ```bash
-   npm run deploy
-   ```
-   Die App ist danach unter `https://keleo.<dein-account>.workers.dev` erreichbar. Eine eigene Domain lässt sich im Cloudflare-Dashboard unter *Workers → keleo → Settings → Domains & Routes* hinzufügen.
+## Inhalts-Struktur
 
-### Optional: E-Mail-Versand
+Alle Daten sind als typisierte TypeScript-Module unter `src/data/` abgelegt:
 
-Für den Versand direkt aus Keleo wird [Resend](https://resend.com) verwendet (kostenloser Plan: 3'000 E-Mails pro Monat, eigene Domain muss verifiziert werden):
+| Datei | Was darin steht |
+|---|---|
+| `src/data/site.ts` | Firmen-Stammdaten (Telefon, Adresse, Öffnungszeiten, Trust-Fakten) |
+| `src/data/services.ts` | Die 6 Leistungs-Bereiche mit Slug, Teaser, Features |
+| `src/data/reviews.ts` | Kundenstimmen (Erstversion anonymisiert — vor Live durch echte ersetzen) |
+| `src/data/projects.ts` | Vorher-Nachher-Projekte für die Galerie |
+| `src/data/faq.ts` | 12 FAQ-Einträge mit Frage-Antwort |
+| `src/data/images.ts` | Bild-URLs (zentral) — CDN-Links auf Higgsfield-Generationen |
 
-```bash
-npx wrangler secret put RESEND_API_KEY
-npx wrangler secret put MAIL_FROM        # z. B. "Muster GmbH <rechnung@muster.ch>"
-```
+Migration auf Storyblok-CMS später: die Daten-Module sind das 1:1-Abbild der späteren Storyblok-Blocks. Beim Wechsel werden die TypeScript-Imports gegen `useStoryblokApi()`-Aufrufe getauscht — die Astro-Komponenten bleiben unverändert.
 
-Ohne diese Secrets lassen sich die PDFs herunterladen und mit dem eigenen Mailprogramm versenden; die Rechnung wird dann manuell «Als gesendet markiert».
+---
 
-### Optional: zusätzlicher Schutz mit Cloudflare Access
+## Seitenstruktur
 
-Für mehr Sicherheit kann die App zusätzlich hinter **Cloudflare Access** (Zero Trust, bis 50 Benutzer kostenlos) gestellt werden: Dann ist vor dem Keleo-Login noch eine Anmeldung per E-Mail-Code oder Google-Konto nötig.
+- `/` — Conversion-Startseite
+- `/bedachung` (+ Sub-Pages `/flachdach`, `/steildach`, `/metalldach`, `/dachsanierung`)
+- `/spenglerei`
+- `/solar`
+- `/dachbegruenung`
+- `/wartung`
+- `/notdienst` (Lead-Magnet-Page mit Anruf-First-CTA)
+- `/referenzen`
+- `/ueber-uns`
+- `/team`
+- `/jobs`
+- `/aktuell`
+- `/kontakt`
+- `/offerte` (Standalone-Calculator für direkte Ad-Links)
+- `/danke` (Form-Success)
+- `/impressum`, `/datenschutz`, `/agb` (Inhaber-Stubs)
 
-## Projektstruktur
+---
 
-```
-keleo/
-├── migrations/            SQL-Migrationen für D1 (0001_init.sql)
-├── public/                CSS, JS, Favicon (werden direkt vom Edge ausgeliefert)
-├── src/
-│   ├── index.tsx          Einstieg: Hono-App, Login, Routen-Montage
-│   ├── auth.ts            Passwort-Login und signiertes Session-Cookie
-│   ├── db.ts              Datenzugriff (Kunden, Dokumente, Zahlungen, Aufgaben, Dashboard)
-│   ├── env.ts             Typen für Bindings und Secrets
-│   ├── lib/
-│   │   ├── qrbill.ts      Swiss QR Code: Payload, IBAN/QR-IBAN, QRR/SCOR-Referenzen
-│   │   ├── pdf.ts         PDF-Erzeugung inkl. Zahlteil/Empfangsschein
-│   │   ├── totals.ts      Summen, Rabatt, MwSt, Rappenrundung
-│   │   ├── money.ts       Beträge in Rappen, Formatierung
-│   │   ├── email.ts       Resend-Anbindung
-│   │   └── status.ts      Anzeigestatus (offen, überfällig, teilbezahlt …)
-│   ├── routes/            HTTP-Routen pro Bereich
-│   └── views/             Seiten als JSX-Komponenten
-├── test/                  Vitest-Unit-Tests
-├── wrangler.jsonc         Cloudflare-Konfiguration (Worker, D1, Assets)
-└── PLAN.md                Plan und Hintergrund
-```
+## Bilder
 
-## Hinweise zur QR-Rechnung
+Aktueller Stand: Hero, Vorher-Nachher-Paar 1, CTA-Hintergrund sind via **Higgsfield `soul_location`** generiert und liegen als Remote-URLs in `src/data/images.ts`.
 
-- Seit dem 21. November 2025 sind im Swiss QR Code nur noch **strukturierte Adressen** erlaubt (Strasse und Hausnummer getrennt). Keleo erfasst Adressen deshalb immer getrennt.
-- **QR-IBAN** (von der Bank beantragen): Rechnungen erhalten eine 27-stellige QR-Referenz, Zahlungen lassen sich automatisch zuordnen.
-- **Normale IBAN**: Rechnungen erhalten eine Creditor Reference nach ISO 11649 (RF…).
-- Unter *Einstellungen → Test-Zahlteil* lässt sich ein Beispiel-PDF erzeugen und mit der Banking-App scannen.
-- Für die Produktion empfiehlt sich eine einmalige Prüfung einer echten Rechnung mit dem Validierungsdienst der SIX (validation.iso-payments.ch) oder direkt mit der eigenen Bank.
+Geplant (alle Prompts in `image-prompts.md`):
+- 4 weitere Vorher-Nachher-Bilder (Projekt 2 + 3)
+- 3 Service-Detail-Shots
+- 3 Kunden-Review-Avatare (Higgsfield `soul_cast`)
+
+**Wichtig:** Inhaber-/Team-Fotos werden bewusst nicht KI-generiert (Trust-Risiko). Auf `/team` und `/ueber-uns` sind Platzhalter mit Hinweis — vor Live-Schaltung durch echte Fotos ersetzen.
+
+**Lokale Optimierung:** Vor dem Production-Build:
+1. Bilder von Higgsfield-CDN nach `/public/img/` herunterladen
+2. Pfade in `src/data/images.ts` von CDN-URLs auf `/img/...` umstellen
+3. `npm run build` — Astro optimiert die lokalen Bilder dann via `<Image>`-Komponente
+
+---
+
+## Anpassen
+
+| Was | Wo |
+|---|---|
+| Telefonnummer / Adresse | `src/data/site.ts` |
+| Leistungen / Service-Beschreibungen | `src/data/services.ts` + `src/pages/<service>.astro` |
+| FAQ | `src/data/faq.ts` |
+| Reviews | `src/data/reviews.ts` |
+| Vorher-Nachher-Projekte | `src/data/projects.ts` (Bilder in `/public/img/projects/`) |
+| Farbpalette | `tailwind.config.mjs` (Color-Tokens) |
+| Schriften | `src/styles/global.css` (Fontsource-Imports) |
+| Hero-Headline | `src/components/sections/Hero.astro` (Default-Props) oder als Prop auf `index.astro` |
+| Schema-Markup | `src/layouts/Layout.astro` |
+
+---
+
+## Form-Backend
+
+Der Multi-Step-Calculator postet aktuell an `/` (Form-Submission-Endpoint). Vor Live-Schaltung:
+
+- **Empfehlung:** Formspree, Web3Forms, oder Netlify Forms — alle drei funktionieren mit statischem Astro ohne Backend.
+- Alternativ ein Astro-Endpoint unter `src/pages/api/quote.ts` einbauen, der an SADA-CRM oder Mail weiterleitet.
+- Spam-Schutz: Honeypot-Feld einbauen oder Cloudflare Turnstile.
+
+Erfolgs-Page: `/danke`.
+
+---
+
+## SEO
+
+- `LocalBusiness`-Schema im Layout (Adresse, Telefon, Öffnungszeiten, Geo)
+- `FAQPage`-Schema in jeder FAQ-Sektion (mehrfach pro Site OK)
+- `@astrojs/sitemap` generiert automatisch eine Sitemap unter `/sitemap-index.xml`
+- `robots.txt` vorhanden
+- View Transitions für sanfte Navigation (Google bewertet das positiv)
+- Lighthouse-Ziele (siehe `design-direction.md` Abschnitt 10): LCP < 2.0s, INP < 150ms, CLS < 0.05
+
+---
+
+## Deployment
+
+Funktioniert auf jedem statischen Host:
+
+- **Vercel:** `vercel deploy` — automatische Erkennung Astro
+- **Netlify:** Build-Command `npm run build`, Publish-Dir `dist`
+- **Cloudflare Pages:** identisch
+- **Eigener Server:** `dist/` per FTP oder rsync auf Webserver kopieren
+
+Domain auf `https://www.sada.ch` setzen, `site` in `astro.config.mjs` ist bereits darauf konfiguriert.
+
+---
+
+## Vor Live-Schaltung — Checkliste
+
+- [ ] Inhaber-/Team-Fotos einsetzen (Platzhalter ersetzen)
+- [ ] Echte Kunden-Reviews einsetzen (anonymisierte Erstversion ersetzen)
+- [ ] Impressum, Datenschutzerklärung, AGB ausfüllen
+- [ ] Form-Backend einrichten und testen
+- [ ] Plausible oder Umami für Analytics einrichten
+- [ ] OG-Default-Image `/og-default.jpg` ergänzen (1200×630)
+- [ ] Favicon auf Firmenmarke anpassen (`/favicon.svg`)
+- [ ] Domain konfigurieren und HTTPS einrichten
+- [ ] Sitemap an Google Search Console übermitteln
+- [ ] Google Ads UTM-Tracking auf Conversion-CTAs ergänzen
+- [ ] Bilder lokal optimieren (siehe Abschnitt Bilder)

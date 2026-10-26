@@ -151,7 +151,7 @@ Geprüft wurde der komplette Ablauf lokal: Einstellungen → Kunde → Offerte �
 
 ## 11. Veröffentlichung
 
-Die Schritte sind im [README](./README.md) beschrieben. Kurzfassung: Cloudflare-Konto anlegen → `wrangler login` → `npm run db:create` (ID in `wrangler.jsonc` eintragen) → `npm run db:migrate:remote` → Secrets setzen → `npm run deploy`. Danach läuft Keleo unter `https://keleo.<konto>.workers.dev`; eine eigene Domain kann im Dashboard verbunden werden.
+Die Einrichtung auf Cloudflare übernimmt das Skript `npm run cloud:setup` (Datenbank anlegen, Migrationen, Worker veröffentlichen, Secrets setzen). Drei Wege sind im [README](./README.md) beschrieben: aus der Claude-Cloud-Umgebung (benötigt dort die Freigabe von `api.cloudflare.com` und ein API-Token als Umgebungs-Secret), automatisch über GitHub Actions (`.github/workflows/deploy-keleo.yml` mit den Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `KELEO_APP_PASSWORD`) oder am eigenen Computer nach `npx wrangler login`. Danach läuft Keleo unter `https://keleo.<konto>.workers.dev`; eine eigene Domain kann im Dashboard verbunden werden.
 
 ## 12. Offene Entscheidungen
 
