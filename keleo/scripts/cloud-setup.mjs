@@ -102,7 +102,17 @@ wrangler(['d1', 'migrations', 'apply', DB_NAME, '--remote']);
 
 // 5. Veröffentlichen
 log('Worker veröffentlichen');
-const deploy = wrangler(['deploy']);
+const deploy = wrangler(['deploy'], { allowFail: true });
+if (deploy.status !== 0) {
+  if (/subdomain/i.test(deploy.stdout + deploy.stderr)) {
+    fail(
+      'Für das Konto ist noch keine workers.dev-Subdomain gewählt.\n' +
+        '  Im Cloudflare-Dashboard unter «Workers & Pages» einmalig eine Subdomain festlegen\n' +
+        '  und das Skript danach erneut ausführen.',
+    );
+  }
+  fail('«wrangler deploy» ist fehlgeschlagen (siehe Ausgabe oben).');
+}
 const url = (deploy.stdout.match(/https:\/\/[a-z0-9.-]+\.workers\.dev/i) || [])[0];
 
 // 6. Secrets
