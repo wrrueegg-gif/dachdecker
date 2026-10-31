@@ -1,6 +1,6 @@
 # SADA Bedachung — Conversion-Website
 
-> **Hinweis:** Im Ordner [`keleo/`](./keleo/) liegt ein eigenständiges zweites Projekt: **Keleo**, ein kleines Rechnungs- und Offertenprogramm mit Schweizer QR-Rechnung für Cloudflare Workers + D1 (siehe `keleo/README.md` und `keleo/PLAN.md`).
+> **Hinweis:** Das Rechnungsprogramm **Keleo** lag vorübergehend im Ordner `keleo/` dieses Repositories und hat seit dem 31. Oktober 2026 ein eigenes Repository: https://github.com/wrrueegg-gif/koleo
 
 Astro 4 + Tailwind 3, statisches Multi-Page-Setup mit Multi-Step-Angebotsrechner, Vorher-Nachher-Galerie und Branchen-Schwerpunkt Dachdecker/Spenglerei für die Schweiz (Kanton Zürich).
 
